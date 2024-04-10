@@ -7,7 +7,7 @@ load_dotenv()
 app = Flask(__name__)
 
 
-@app.route("/api/data", methods=["GET"])
+@app.route("/", methods=["GET"])
 def get_data():
     data = {"message": "Hello from Flask!"}
     return jsonify(data)
