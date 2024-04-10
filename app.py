@@ -1,4 +1,8 @@
 from flask import Flask, jsonify, request
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
 
@@ -21,4 +25,4 @@ def log_individual():
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, port=os.getenv("FLASK_RUN_PORT"))

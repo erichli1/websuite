@@ -15,6 +15,7 @@ ncurses=6.4=hcec6c5f_0
 openssl=3.0.13=hca72f7f_0
 pip=23.3.1=py312hecd8cb5_0
 python=3.12.2=hd58486a_0
+python-dotenv=0.21.0=py312hecd8cb5_0
 readline=8.2=hca72f7f_0
 setuptools=68.2.2=py312hecd8cb5_0
 sqlite=3.41.2=h6c40b1e_0
