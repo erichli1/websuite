@@ -10,7 +10,6 @@ from playwright.sync_api import sync_playwright
 import time
 from sys import argv, exit, platform
 from openai import OpenAI
-from ...utils import get_test_goals
 
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
@@ -58,6 +57,8 @@ like "TYPESUBMIT 7 "search query"" to get to a more useful page.
 Then, if you find yourself on a Google search results page, you might issue the command "CLICK 24" to click
 on the first link in the search results. (If your previous command was a TYPESUBMIT your next command should
 probably be a CLICK.)
+
+When you have completed the task, please exit by returning a command of EXIT.
 
 Here are some examples:
 
@@ -560,9 +561,7 @@ class Crawler:
         return elements_of_interest
 
 
-if (
-        __name__ == "__main__"
-):
+def run_natbot(goal: str, url: str):
     _crawler = Crawler()
 
     def print_help():
@@ -606,12 +605,7 @@ if (
 
         time.sleep(2)
 
-    (goal, url) = get_test_goals("click", "button")
-
-    print("\nWelcome to natbot! What is your objective?")
     objective = goal
-    # objective = input()
-    # webarena_url = input("Please input the starting URL\n")
 
     gpt_cmd = ""
     prev_cmd = ""
@@ -632,6 +626,10 @@ if (
                       browser_content + "\n----------------\n")
             if len(gpt_cmd) > 0:
                 print("Suggested command: " + gpt_cmd)
+
+            if (gpt_cmd == "EXIT"):
+                print("Exiting.")
+                exit(0)
 
             command = input()
             if command == "r" or command == "":
