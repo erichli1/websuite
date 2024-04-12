@@ -1,8 +1,8 @@
 # Function to handle the interrupt signal (Ctrl+C)
 cleanup() {
     echo "Caught Signal ... cleaning up."
-    kill $PID_PYTHON
-    kill $PID_NPM
+    # Send SIGTERM to all processes in the current process group
+    kill -- -$PGID
     echo "Done cleanup ... quitting."
     exit 1
 }
@@ -10,14 +10,19 @@ cleanup() {
 # Trap the SIGINT signal (Ctrl+C) and call the cleanup function
 trap 'cleanup' SIGINT
 
-# Start the Flask backend in the background and get its PID
-cd environment && python app.py &
-PID_PYTHON=$!
+# Store the process group ID
+PGID=$$
+echo "Process Group ID: $PGID"
 
-# Change to the frontend directory, start the Next frontend in the background, and get its PID
-cd environment/frontend && npm run dev &
-PID_NPM=$!
+# Start the Flask backend
+cd environment
+echo "Starting Python server..."
+python app.py &
+
+# Start the Next.js frontend
+cd frontend
+echo "Starting NPM server..."
+npm run dev &
 
 # Wait for both processes to exit
-wait $PID_PYTHON
-wait $PID_NPM
+wait
