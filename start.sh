@@ -11,11 +11,11 @@ cleanup() {
 trap 'cleanup' SIGINT
 
 # Start the Flask backend in the background and get its PID
-python app.py &
+cd environment && python app.py &
 PID_PYTHON=$!
 
 # Change to the frontend directory, start the Next frontend in the background, and get its PID
-cd frontend && npm run dev &
+cd environment/frontend && npm run dev &
 PID_NPM=$!
 
 # Wait for both processes to exit

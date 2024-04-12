@@ -2,7 +2,9 @@ from flask import Flask, jsonify, request
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+
+parent_folder = os.path.join(os.path.dirname(__file__), "../")
+load_dotenv(dotenv_path=os.path.join(parent_folder, ".env"))
 
 app = Flask(__name__)
 
