@@ -15,7 +15,7 @@ def get_data():
     return jsonify(data)
 
 
-@app.route("/log/individual", methods=["POST"])
+@app.route("/log", methods=["POST"])
 def log_individual():
     json = request.get_json()
     log = json.get("log")
