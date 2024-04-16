@@ -1,6 +1,8 @@
 "use client";
 
 import { CLICK_TESTS, ClickTestType, TASKS } from "@/app/utils";
+import LoggedButton from "@/ui/components/click/button/LoggedButton";
+import LoggedLink from "@/ui/components/click/link/LoggedLink";
 import { useSearchParams } from "next/navigation";
 
 export default function Page({ params }: { params: { task: string } }) {
@@ -26,37 +28,8 @@ export default function Page({ params }: { params: { task: string } }) {
 function ClickTest({ test }: { test: ClickTestType }) {
   return (
     <>
-      {test === "button" && (
-        <button
-          onClick={() =>
-            fetch("/log/individual", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({ log: "Clicked button" }),
-            })
-          }
-        >
-          Click me
-        </button>
-      )}
-      {test === "link" && (
-        <a
-          href="#"
-          onClick={() =>
-            fetch("/log/individual", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({ log: "Clicked link" }),
-            })
-          }
-        >
-          Click me
-        </a>
-      )}
+      {test === "button" && <LoggedButton loglabel="Click me" />}
+      {test === "link" && <LoggedLink loglabel="Click me" href="#" />}
     </>
   );
 }

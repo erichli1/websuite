@@ -10,8 +10,8 @@ const nextConfig = {
     async rewrites() {
         return [
           {
-            source: '/log/individual',
-            destination: `http://127.0.0.1:${process.env.FLASK_RUN_PORT}/log/individual`,
+            source: '/log',
+            destination: `http://127.0.0.1:${process.env.FLASK_RUN_PORT}/log`,
           },
         ]
     },
