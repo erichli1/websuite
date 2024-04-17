@@ -1,6 +1,7 @@
 "use client";
 
 import { ALL_TESTS } from "@/app/utils";
+import { Box } from "@mui/material";
 import Typography from "@mui/material/Typography";
 import { useSearchParams } from "next/navigation";
 
@@ -19,5 +20,5 @@ export default function Page({ params }: { params: { task: string } }) {
       </Typography>
     );
 
-  return ALL_TESTS[task][test];
+  return <Box margin="1rem">{ALL_TESTS[task][test]}</Box>;
 }
