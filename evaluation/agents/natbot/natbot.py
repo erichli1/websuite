@@ -166,9 +166,10 @@ black_listed_elements = set(["html", "head", "title", "meta", "iframe",
 
 class Crawler:
     def __init__(self):
+        playwright = sync_playwright().start()
+        self.playwright = playwright
         self.browser = (
-            sync_playwright()
-            .start()
+            playwright
             .chromium.launch(
                 headless=False,
             )
@@ -658,3 +659,6 @@ def run_natbot(goal: str, url: str):
                 print_help()
     except KeyboardInterrupt:
         print("\n[!] Ctrl+C detected, exiting gracefully.")
+
+    _crawler.browser.close()
+    _crawler.playwright.stop()

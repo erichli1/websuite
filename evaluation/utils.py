@@ -2,6 +2,8 @@ from typing import Callable, Dict
 from evaluation.agents.natbot.natbot import run_natbot
 import sys
 import os
+from evaluation.evaluators import Eval as eval
+import asyncio
 
 
 parent_folder = os.path.join(os.path.dirname(__file__), "../")
@@ -20,8 +22,8 @@ class Test:
 
 ind_tests: Dict[str, Dict[str, Test]] = {
     "click": {
-        "button": Test("Click the button", lambda response: any("button" in line for line in response)),
-        "link": Test("Click the link", lambda response: any("link" in line for line in response)),
+        "button": Test("Click the button", lambda logs: eval.all(logs, [eval.len_match(1), eval.contains_partial_match("click/button")])),
+        "link": Test("Click the link", lambda logs: eval.all(logs, [eval.len_match(1), eval.contains_partial_match("click/button")])),
     },
 }
 
@@ -73,7 +75,7 @@ def get_evals_dict(filename: str) -> Dict[str, list[str]]:
             collecting = True
             current_key = line.split(":")[1].strip()
         elif line.startswith("TEST FINISH"):
-            if current_key and current_values:
+            if current_key:
                 eval_dict[current_key] = current_values
             collecting = False
             current_key = None
