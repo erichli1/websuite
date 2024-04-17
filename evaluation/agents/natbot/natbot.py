@@ -629,7 +629,7 @@ def run_natbot(goal: str, url: str):
 
             if (gpt_cmd == "EXIT"):
                 print("Exiting.")
-                exit(0)
+                break
 
             command = input()
             if command == "r" or command == "":
@@ -658,4 +658,3 @@ def run_natbot(goal: str, url: str):
                 print_help()
     except KeyboardInterrupt:
         print("\n[!] Ctrl+C detected, exiting gracefully.")
-        exit(0)

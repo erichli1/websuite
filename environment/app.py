@@ -20,7 +20,7 @@ def log_individual():
     json = request.get_json()
     log = json.get("log")
 
-    with open('trajectories/temp.txt', 'a') as file:
+    with open(parent_folder + 'trajectories/log.txt', 'a') as file:
         file.write(log + "\n")
 
     return jsonify({"log": log})
