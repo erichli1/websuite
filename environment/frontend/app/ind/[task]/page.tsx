@@ -1,35 +1,23 @@
 "use client";
 
-import { CLICK_TESTS, ClickTestType, TASKS } from "@/app/utils";
-import LoggedButton from "@/ui/components/click/button/LoggedButton";
-import LoggedLink from "@/ui/components/click/link/LoggedLink";
+import { ALL_TESTS } from "@/app/utils";
+import Typography from "@mui/material/Typography";
 import { useSearchParams } from "next/navigation";
 
 export default function Page({ params }: { params: { task: string } }) {
   const searchParams = useSearchParams();
+  const task = params.task;
   const test = searchParams.get("test");
 
-  const identifiedTasks = TASKS.filter((task) => task === params.task);
-  const identifiedTask = identifiedTasks[0];
+  if (test === null) return <Typography>No test provided.</Typography>;
+  if (!(task in ALL_TESTS))
+    return <Typography>Did not find task: {task}</Typography>;
+  if (!(test in ALL_TESTS[task]))
+    return (
+      <Typography>
+        Did not find test: {task}/{test}
+      </Typography>
+    );
 
-  const identifiedTests = CLICK_TESTS.filter((clickTest) => clickTest === test);
-  const identifiedTest = identifiedTests[0];
-
-  if (identifiedTasks.length === 0 || identifiedTests.length === 0)
-    return <p>Unable to find task or test</p>;
-
-  return (
-    <div>
-      {identifiedTask === "click" && <ClickTest test={identifiedTest} />}
-    </div>
-  );
-}
-
-function ClickTest({ test }: { test: ClickTestType }) {
-  return (
-    <>
-      {test === "button" && <LoggedButton loglabel="Click me" />}
-      {test === "link" && <LoggedLink loglabel="Click me" href="#" />}
-    </>
-  );
+  return ALL_TESTS[task][test];
 }

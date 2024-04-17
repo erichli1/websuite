@@ -22,7 +22,7 @@ class Test:
 ind_tests: Dict[str, Dict[str, Test]] = {
     "click": {
         "button": Test("Click the button", lambda logs: eval.all(logs, [eval.len_match(1), eval.contains_partial_match("click/button")])),
-        "link": Test("Click the link", lambda logs: eval.all(logs, [eval.len_match(1), eval.contains_partial_match("click/button")])),
+        "link": Test("Click the link", lambda logs: eval.all(logs, [eval.len_match(1), eval.contains_partial_match("click/link")])),
     },
 }
 
