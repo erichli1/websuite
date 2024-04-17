@@ -3,7 +3,6 @@ from evaluation.agents.natbot.natbot import run_natbot
 import sys
 import os
 from evaluation.evaluators import Eval as eval
-import asyncio
 
 
 parent_folder = os.path.join(os.path.dirname(__file__), "../")
