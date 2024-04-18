@@ -132,7 +132,23 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
                     logs, [eval.exact_match(component="type/text", newValue="John")]
                 ),
             )
-        ]
+        ],
+        "date": [
+            Test(
+                "Enter the date April 3rd, 2024",
+                lambda logs: eval.ordered(
+                    logs,
+                    [
+                        eval.all_log(
+                            [
+                                eval.exact_match(component="type/date"),
+                                eval.contains_match(newValue="03 Apr 2024"),
+                            ]
+                        )
+                    ],
+                ),
+            )
+        ],
     },
 }
 

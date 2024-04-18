@@ -45,5 +45,19 @@ class Eval:
         )
 
     @staticmethod
+    def contains_match(
+        component: str | None = None,
+        label: str | None = None,
+        newValue: str | None = None,
+        oldValue: str | None = None,
+    ) -> LogEvaluator:
+        return (
+            lambda log: (component is None or component in log.component)
+            and (label is None or label in log.label)
+            and (newValue is None or newValue in log.newValue)
+            and (oldValue is None or oldValue in log.oldValue)
+        )
+
+    @staticmethod
     def compare_values(compare: Callable[[str, str], bool]) -> LogEvaluator:
         return lambda log: compare(log.newValue, log.oldValue)
