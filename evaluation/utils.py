@@ -1,8 +1,9 @@
-from typing import Callable, Dict
+from typing import Any, Callable, Dict, TypeAlias
 from evaluation.agents.natbot.natbot import run_natbot
 import sys
 import os
 from evaluation.evaluators import Eval as eval
+import re
 
 
 parent_folder = os.path.join(os.path.dirname(__file__), "../")
@@ -11,52 +12,79 @@ LOCALHOST_PORT = 3000  # needs to be in sync with /environment/frontend/package.
 
 
 class Test:
-    def __init__(self, goal: str, eval: Callable[[list[str]], bool]):
+    def __init__(self, goal: str, eval: Callable[[list[str]], bool], name: str = None):
         self.goal = goal
         self.eval = eval
+        self.name = "default" if name is None else name
 
     def eval(self, response: list[str]) -> bool:
         return self.eval(response)
 
 
-ind_tests: Dict[str, Dict[str, Test]] = {
+ind_tests: Dict[str, Dict[str, list[Test]]] = {
     "click": {
-        "button": Test("Click the button", lambda logs: eval.all(logs, [eval.len_match(1), eval.contains_partial_match("click/button")])),
-        "link": Test("Click the link", lambda logs: eval.all(logs, [eval.len_match(1), eval.contains_partial_match("click/link")])),
-        "slider": Test("Adjust the volume to be the maximum", lambda logs: eval.all(logs, [eval.len_match(1), eval.contains_partial_match("click/slider"), eval.contains_partial_match("100")])),
+        "button": [Test("Click the button", lambda logs: eval.all(logs, [eval.len_match(1), eval.contains_partial_match("click/button")]))],
+        "link": [Test("Click the link", lambda logs: eval.all(logs, [eval.len_match(1), eval.contains_partial_match("click/link")]))],
+        "slider": [Test("Adjust the volume to be the maximum", lambda logs: eval.all(logs, [eval.len_match(1), eval.contains_partial_match("click/slider"), eval.contains_partial_match("100")]), name="max"), Test("Adjust the volume to be the minimum", lambda logs: eval.all(logs, [eval.len_match(1), eval.contains_partial_match("click/slider"), eval.contains_partial_match("0")]), name="min")],
     },
 }
+
+
+def flatten(input: list[list[Any]]) -> list[Any]:
+    return [item for sublist in input for item in sublist]
 
 
 def get_url(task: str, test: str):
     return f"localhost:{LOCALHOST_PORT}/ind/{task}?test={test}"
 
 
-def get_test_and_metadata(task: str, test: str):
+TestsAndMetadata: TypeAlias = tuple[list[Test], tuple[str, str]]
+
+
+def get_specific_test_and_metadata(task: str, test: str, name: str):
     task_dict = ind_tests.get(task)
     if task_dict is None:
         print(f"ERROR: unable to find task {task}")
         return None
 
-    test_goal = task_dict.get(test)
-    if test_goal is None:
+    test_obj = task_dict.get(test)
+    if test_obj is None:
         print(f"ERROR: unable to find test {task}/{test}")
         return None
 
-    return (test_goal, (task, test))
+    for test in test_obj:
+        if test.name == name:
+            return (test, (task, test))
+
+    print(f"ERROR: unable to find test {task}/{test}/{name}")
+    return None
 
 
-def get_tests_and_metadatas_from_task(task: str):
+def get_tests_and_metadata(task: str, test: str) -> TestsAndMetadata | None:
     task_dict = ind_tests.get(task)
     if task_dict is None:
         print(f"ERROR: unable to find task {task}")
         return None
 
-    return [(task_dict[test], (task, test)) for test in task_dict.keys()]
+    test_obj = task_dict.get(test)
+    if test_obj is None:
+        print(f"ERROR: unable to find test {task}/{test}")
+        return None
+
+    return (test_obj, (task, test))
 
 
-def get_all_tests_and_metadatas():
-    return [(ind_tests[task][test], (task, test)) for task in ind_tests.keys() for test in ind_tests[task].keys()]
+def get_tests_and_metadatas_from_task(task: str) -> list[TestsAndMetadata] | None:
+    task_dict = ind_tests.get(task)
+    if task_dict is None:
+        print(f"ERROR: unable to find task {task}")
+        return None
+
+    return [get_tests_and_metadata(task, test) for test in task_dict.keys()]
+
+
+def get_all_tests_and_metadatas() -> list[TestsAndMetadata] | None:
+    return flatten([get_tests_and_metadatas_from_task(task) for task in ind_tests.keys()])
 
 
 def get_evals_dict(filename: str) -> Dict[str, list[str]]:
@@ -97,7 +125,7 @@ if (__name__ == "__main__"):
                     get_tests_and_metadatas_from_task(parts[0]))
             elif len(parts) == 2:
                 tests_and_metadatas.append(
-                    get_test_and_metadata(parts[0], parts[1]))
+                    get_tests_and_metadata(parts[0], parts[1]))
     else:
         tests_and_metadatas = get_all_tests_and_metadatas()
 
@@ -106,15 +134,18 @@ if (__name__ == "__main__"):
         pass
 
     # Run the tests
-    for test, metadata in tests_and_metadatas:
-        with open(parent_folder + "trajectories/log.txt", "a") as file:
-            file.write(f"TEST BEGIN: {metadata[0]}/{metadata[1]}\n")
-        run_natbot(test.goal, get_url(*metadata))
-        with open(parent_folder + "trajectories/log.txt", "a") as file:
-            file.write("TEST FINISH\n")
+    for tests, metadata in tests_and_metadatas:
+        for test in tests:
+            with open(parent_folder + "trajectories/log.txt", "a") as file:
+                file.write(f"TEST BEGIN: {
+                           metadata[0]}/{metadata[1]} {test.name}\n")
+            run_natbot(test.goal, get_url(*metadata))
+            with open(parent_folder + "trajectories/log.txt", "a") as file:
+                file.write("TEST FINISH\n")
 
     # Evaluate the log file
     eval_dict = get_evals_dict(parent_folder + "trajectories/log.txt")
     for key, items in eval_dict.items():
-        test, metadata = get_test_and_metadata(*key.split("/"))
+        test, metadata = get_specific_test_and_metadata(
+            *re.split(r'[ /]', key))
         print(f"{key}: {test.eval(items)}")
