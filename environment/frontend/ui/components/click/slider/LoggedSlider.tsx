@@ -4,24 +4,26 @@ import React from "react";
 import { log } from "@/ui/log";
 
 export type LoggedSliderProps = SliderProps & {
-  loglabel: string;
+  logLabel: string;
 };
 
 const STARTING_VAL = 30;
 
 export default function LoggedSlider(props: LoggedSliderProps) {
+  const { logLabel, defaultValue, ...restProps } = props;
+
   const [value, setValue] = React.useState<number>(
-    (props.defaultValue as number) ?? STARTING_VAL
+    (defaultValue as number) ?? STARTING_VAL
   );
   const [lastCommittedValue, setLastCommittedValue] = React.useState<number>(
-    (props.defaultValue as number) ?? STARTING_VAL
+    (defaultValue as number) ?? STARTING_VAL
   );
 
   return (
     <Box sx={{ width: 250 }}>
-      <Typography>{props.loglabel}</Typography>
+      <Typography>{logLabel}</Typography>
       <Slider
-        {...props}
+        {...restProps}
         value={value}
         onChange={(event, newValue, activeThumb) => {
           setValue(newValue as number);
@@ -30,7 +32,7 @@ export default function LoggedSlider(props: LoggedSliderProps) {
         onChangeCommitted={(event, newValue) => {
           log({
             component: "click/slider",
-            label: props.loglabel,
+            label: logLabel,
             newVal: newValue.toString(),
             oldVal: lastCommittedValue.toString(),
           });

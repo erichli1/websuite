@@ -2,19 +2,21 @@ import { log } from "@/ui/log";
 import Button, { ButtonProps } from "@mui/material/Button";
 
 export type LoggedButtonProps = ButtonProps & {
-  loglabel: string;
+  logLabel: string;
 };
 
 export default function LoggedButton(props: LoggedButtonProps) {
+  const { logLabel, ...restProps } = props;
+
   return (
     <Button
-      {...props}
+      {...restProps}
       onClick={(event) => {
-        log({ component: "click/button", label: props.loglabel });
+        log({ component: "click/button", label: logLabel });
         props.onClick?.(event);
       }}
     >
-      {props.loglabel}
+      {logLabel}
     </Button>
   );
 }

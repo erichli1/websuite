@@ -2,19 +2,21 @@ import { log } from "@/ui/log";
 import Link, { LinkProps } from "@mui/material/Link";
 
 export type LoggedLinkProps = LinkProps & {
-  loglabel: string;
+  logLabel: string;
 };
 
 export default function LoggedLink(props: LoggedLinkProps) {
+  const { logLabel, ...restProps } = props;
+
   return (
     <Link
-      {...props}
+      {...restProps}
       onClick={(event) => {
-        log({ component: "click/link", label: props.loglabel });
+        log({ component: "click/link", label: logLabel });
         props.onClick?.(event);
       }}
     >
-      {props.loglabel}
+      {logLabel}
     </Link>
   );
 }

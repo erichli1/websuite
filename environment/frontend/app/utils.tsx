@@ -12,13 +12,13 @@ export const ALL_TESTS: {
   };
 } = {
   click: {
-    button: <LoggedButton loglabel="Submit" />,
-    link: <LoggedLink loglabel="Settings" href="#" />,
-    slider: <LoggedSlider loglabel="Volume" defaultValue={30} />,
-    snackbar: <LoggedSnackbar loglabel="Message sent" />,
-    switch: <LoggedSwitch loglabel="Do not disturb" defaultChecked={false} />,
+    button: <LoggedButton logLabel="Submit" />,
+    link: <LoggedLink logLabel="Settings" href="#" />,
+    slider: <LoggedSlider logLabel="Volume" defaultValue={30} />,
+    snackbar: <LoggedSnackbar logLabel="Message sent" />,
+    switch: <LoggedSwitch logLabel="Do not disturb" defaultChecked={false} />,
   },
   type: {
-    text: <LoggedTextField loglabel="Name" defaultValue="" debounceMs={500} />,
+    text: <LoggedTextField logLabel="Name" defaultValue="" debounceMs={500} />,
   },
 };

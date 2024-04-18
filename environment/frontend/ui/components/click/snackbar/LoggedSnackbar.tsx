@@ -8,10 +8,11 @@ export type LoggedSnackbarProps = Omit<
   SnackbarProps,
   "open" | "message" | "action"
 > & {
-  loglabel: string;
+  logLabel: string;
 };
 
 export default function LoggedSnackbar(props: LoggedSnackbarProps) {
+  const { logLabel, ...restProps } = props;
   const [open, setOpen] = React.useState(true);
 
   const handleClose = (
@@ -27,13 +28,13 @@ export default function LoggedSnackbar(props: LoggedSnackbarProps) {
 
   return (
     <Snackbar
-      {...props}
+      {...restProps}
       open={open}
       onClose={(event, reason) => {
         handleClose(event, reason);
         props.onClose?.(event, reason);
       }}
-      message={props.loglabel}
+      message={logLabel}
       action={
         <IconButton
           size="small"
@@ -43,7 +44,7 @@ export default function LoggedSnackbar(props: LoggedSnackbarProps) {
             handleClose(event);
             log({
               component: "click/snackbar",
-              label: props.loglabel,
+              label: logLabel,
               newVal: "closed",
               oldVal: "open",
             });
