@@ -2,7 +2,7 @@ import LoggedButton from "@/ui/components/click/button/LoggedButton";
 import LoggedConfirmButton from "@/ui/components/click/confirmbutton/LoggedConfirmButton";
 import LoggedIconButton from "@/ui/components/click/iconbutton/LoggedIconButton";
 import LoggedLink from "@/ui/components/click/link/LoggedLink";
-import LoggedMenu from "@/ui/components/click/menu/LoggedMenu";
+import LoggedDropdownMenu from "@/ui/components/click/dropdownmenu/LoggedDropdownMenu";
 import LoggedSlider from "@/ui/components/click/slider/LoggedSlider";
 import LoggedSnackbar from "@/ui/components/click/snackbar/LoggedSnackbar";
 import LoggedSwitch from "@/ui/components/click/switch/LoggedSwitch";
@@ -35,8 +35,8 @@ export const ALL_TESTS: {
     slider: <LoggedSlider logLabel="Volume" defaultValue={30} />,
     snackbar: <LoggedSnackbar logLabel="Message sent" />,
     switch: <LoggedSwitch logLabel="Do not disturb" defaultChecked={false} />,
-    menu: (
-      <LoggedMenu
+    dropdownmenu: (
+      <LoggedDropdownMenu
         menuItems={[
           { logLabel: "Profile" },
           { logLabel: "Settings" },

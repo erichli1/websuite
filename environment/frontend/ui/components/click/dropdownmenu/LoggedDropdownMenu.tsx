@@ -1,4 +1,3 @@
-import IconButton from "@mui/material/IconButton";
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
 import MenuIcon from "@mui/icons-material/Menu";
@@ -17,7 +16,7 @@ export type LoggedMenuItemProps = Omit<MenuItemProps, "key"> & {
   logLabel: string;
 };
 
-export default function LoggedMenu(props: LoggedMenuProps) {
+export default function LoggedDropdownMenu(props: LoggedMenuProps) {
   const { menuItems, ...restProps } = props;
 
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
@@ -60,7 +59,7 @@ export default function LoggedMenu(props: LoggedMenuProps) {
                 {...restMenuItemProps}
                 onClick={(event) => {
                   log({
-                    component: "click/menu",
+                    component: "click/dropdownmenu",
                     label: logLabel,
                   });
                   menuItem.onClick?.(event);

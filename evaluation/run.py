@@ -139,7 +139,7 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
                 "off-from-off",
             ),
         ],
-        "menu": [
+        "dropdownmenu": [
             Test(
                 "Open the menu",
                 lambda logs: eval.ordered(
