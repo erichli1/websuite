@@ -27,6 +27,12 @@ class Eval:
         )
 
     @staticmethod
+    def unordered(logs: list[Log], evaluators: list[LogEvaluator]) -> bool:
+        return len(logs) == len(evaluators) and all(
+            any(evaluator(log) for evaluator in evaluators) for log in logs
+        )
+
+    @staticmethod
     def all_log(evaluators: list[LogEvaluator]) -> LogEvaluator:
         return lambda log: all(evaluator(log) for evaluator in evaluators)
 

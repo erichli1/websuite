@@ -7,6 +7,7 @@ import LoggedCheckbox from "@/ui/components/select/checkbox/LoggedCheckbox";
 import LoggedDatePicker from "@/ui/components/type/date/LoggedDatePicker";
 import LoggedPhoneInput from "@/ui/components/type/phone/LoggedPhoneInput";
 import LoggedTextField from "@/ui/components/type/text/LoggedTextField";
+import FormGroup from "@mui/material/FormGroup";
 import React from "react";
 
 export const ALL_TESTS: {
@@ -28,5 +29,11 @@ export const ALL_TESTS: {
   },
   select: {
     checkbox: <LoggedCheckbox logLabel="I accept the terms and conditions" />,
+    multicheck: (
+      <FormGroup>
+        <LoggedCheckbox logLabel="I accept the terms and conditions" />
+        <LoggedCheckbox logLabel="I understand the privacy policy" />
+      </FormGroup>
+    ),
   },
 };

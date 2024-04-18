@@ -173,6 +173,32 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
                 ),
             )
         ],
+        "multicheck": [
+            Test(
+                "Please accept the terms and conditions and privacy policy",
+                lambda logs: eval.unordered(
+                    logs,
+                    [
+                        eval.all_log(
+                            [
+                                eval.exact_match(
+                                    component="select/checkbox", newValue="true"
+                                ),
+                                eval.contains_match(label="terms and conditions"),
+                            ]
+                        ),
+                        eval.all_log(
+                            [
+                                eval.exact_match(
+                                    component="select/checkbox", newValue="true"
+                                ),
+                                eval.contains_match(label="privacy policy"),
+                            ]
+                        ),
+                    ],
+                ),
+            )
+        ],
     },
 }
 
