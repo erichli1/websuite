@@ -1,4 +1,5 @@
 import LoggedButton from "@/ui/components/click/button/LoggedButton";
+import LoggedConfirmButton from "@/ui/components/click/confirmbutton/LoggedConfirmButton";
 import LoggedLink from "@/ui/components/click/link/LoggedLink";
 import LoggedMenu from "@/ui/components/click/menu/LoggedMenu";
 import LoggedSlider from "@/ui/components/click/slider/LoggedSlider";
@@ -18,6 +19,14 @@ export const ALL_TESTS: {
 } = {
   click: {
     button: <LoggedButton logLabel="Submit" />,
+    confirmbutton: (
+      <LoggedConfirmButton
+        logLabel="Delete"
+        dialog={{ title: "Are you sure?" }}
+        confirm={{ label: "Yes" }}
+        cancel={{ label: "No" }}
+      />
+    ),
     link: <LoggedLink logLabel="Settings" href="#" />,
     slider: <LoggedSlider logLabel="Volume" defaultValue={30} />,
     snackbar: <LoggedSnackbar logLabel="Message sent" />,

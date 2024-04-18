@@ -37,6 +37,14 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
                 ),
             )
         ],
+        "confirmbutton": [
+            Test(
+                "Delete the item",
+                lambda logs: eval.ordered(
+                    logs, [eval.exact_match(component="click/confirmbutton")]
+                ),
+            )
+        ],
         "link": [
             Test(
                 "Click the link",
