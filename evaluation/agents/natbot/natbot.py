@@ -15,7 +15,7 @@ client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
 quiet = False
 if len(argv) >= 2:
-    if argv[1] == '-q' or argv[1] == '--quiet':
+    if argv[1] == "-q" or argv[1] == "--quiet":
         quiet = True
         print(
             "Running in quiet mode (HTML and other content hidden); \n"
@@ -160,19 +160,30 @@ PREVIOUS COMMAND: $previous_command
 YOUR COMMAND:
 """
 
-black_listed_elements = set(["html", "head", "title", "meta", "iframe",
-                            "body", "script", "style", "path", "svg", "br", "::marker",])
+black_listed_elements = set(
+    [
+        "html",
+        "head",
+        "title",
+        "meta",
+        "iframe",
+        "body",
+        "script",
+        "style",
+        "path",
+        "svg",
+        "br",
+        "::marker",
+    ]
+)
 
 
 class Crawler:
     def __init__(self):
         playwright = sync_playwright().start()
         self.playwright = playwright
-        self.browser = (
-            playwright
-            .chromium.launch(
-                headless=False,
-            )
+        self.browser = playwright.chromium.launch(
+            headless=False,
         )
 
         self.page = self.browser.new_page()
@@ -241,10 +252,10 @@ class Crawler:
         document_offset_height = page.evaluate("document.body.offsetHeight")
         document_scroll_height = page.evaluate("document.body.scrollHeight")
 
-# percentage_progress_start = (win_upper_bound / document_scroll_height) * 100
-# percentage_progress_end = (
-# (win_height + win_upper_bound) / document_scroll_height
-# ) * 100
+        # percentage_progress_start = (win_upper_bound / document_scroll_height) * 100
+        # percentage_progress_end = (
+        # (win_height + win_upper_bound) / document_scroll_height
+        # ) * 100
         percentage_progress_start = 1
         percentage_progress_end = 2
 
@@ -253,16 +264,14 @@ class Crawler:
                 "x": 0,
                 "y": 0,
                 "text": "[scrollbar {:0.2f}-{:0.2f}%]".format(
-                    round(percentage_progress_start, 2), round(
-                        percentage_progress_end)
+                    round(percentage_progress_start, 2), round(percentage_progress_end)
                 ),
             }
         )
 
         tree = self.client.send(
             "DOMSnapshot.captureSnapshot",
-            {"computedStyles": [], "includeDOMRects": True,
-             "includePaintOrder": True},
+            {"computedStyles": [], "includeDOMRects": True, "includePaintOrder": True},
         )
         strings = tree["strings"]
         document = tree["documents"][0]
@@ -305,7 +314,7 @@ class Crawler:
             if node_name == "img":
                 return "img"
             if (
-                    node_name == "button" or has_click_handler
+                node_name == "button" or has_click_handler
             ):  # found pages that needed this quirk
                 return "button"
             else:
@@ -345,7 +354,7 @@ class Crawler:
             if node_name == tag:
                 value = (True, node_id)
             elif (
-                    is_parent_desc_anchor
+                is_parent_desc_anchor
                 # reuse the parent's anchor_id (which could be much higher in the tree)
             ):
                 value = (True, anchor_id)
@@ -407,8 +416,7 @@ class Crawler:
 
             # inefficient to grab the same set of keys for kinds of objects but its fine for now
             element_attributes = find_attributes(
-                attributes[index], ["type", "placeholder",
-                                    "aria-label", "title", "alt"]
+                attributes[index], ["type", "placeholder", "aria-label", "title", "alt"]
             )
 
             # print(element_attributes)
@@ -423,9 +431,7 @@ class Crawler:
             ancestor_node_key = (
                 None
                 if not ancestor_exception
-                else str(anchor_id)
-                if is_ancestor_of_anchor
-                else str(button_id)
+                else str(anchor_id) if is_ancestor_of_anchor else str(button_id)
             )
             ancestor_node = (
                 None
@@ -437,13 +443,10 @@ class Crawler:
                 text = strings[node_value[index]]
                 if text == "|" or text == "•":
                     continue
-                ancestor_node.append({
-                    "type": "type", "value": text
-                })
+                ancestor_node.append({"type": "type", "value": text})
             else:
                 if (
-                        node_name == "input" and element_attributes.get(
-                            "type") == "submit"
+                    node_name == "input" and element_attributes.get("type") == "submit"
                 ) or node_name == "button":
                     node_name = "button"
                     element_attributes.pop(
@@ -452,11 +455,13 @@ class Crawler:
 
                 for key in element_attributes:
                     if ancestor_exception:
-                        ancestor_node.append({
-                            "type": "attribute",
-                            "key":  key,
-                            "value": element_attributes[key]
-                        })
+                        ancestor_node.append(
+                            {
+                                "type": "attribute",
+                                "key": key,
+                                "value": element_attributes[key],
+                            }
+                        )
                     else:
                         meta_data.append(element_attributes[key])
 
@@ -464,12 +469,14 @@ class Crawler:
 
             if node_value[index] >= 0:
                 element_node_value = strings[node_value[index]]
-                if element_node_value == "|":  # commonly used as a seperator, does not add much context - lets save ourselves some token space
+                if (
+                    element_node_value == "|"
+                ):  # commonly used as a seperator, does not add much context - lets save ourselves some token space
                     continue
             elif (
-                    node_name == "input"
-                    and index in input_value_index
-                    and element_node_value is None
+                node_name == "input"
+                and index in input_value_index
+                and element_node_value is None
             ):
                 node_input_text_index = input_value_index.index(index)
                 text_index = input_value_values[node_input_text_index]
@@ -487,7 +494,11 @@ class Crawler:
                     "node_name": node_name,
                     "node_value": element_node_value,
                     "node_meta": meta_data,
-                    "is_clickable": index in is_clickable or ("aria-label" in element_attributes and element_attributes["aria-label"] == "Search"),
+                    "is_clickable": index in is_clickable
+                    or (
+                        "aria-label" in element_attributes
+                        and element_attributes["aria-label"] == "Search"
+                    ),
                     "origin_x": int(x),
                     "origin_y": int(y),
                     "center_x": int(x + (width / 2)),
@@ -517,11 +528,11 @@ class Crawler:
 
             if node_index in child_nodes:
                 for child in child_nodes.get(node_index):
-                    entry_type = child.get('type')
-                    entry_value = child.get('value')
+                    entry_type = child.get("type")
+                    entry_value = child.get("value")
 
                     if entry_type == "attribute":
-                        entry_key = child.get('key')
+                        entry_key = child.get("key")
                         meta_data.append(f'{entry_key}="{entry_value}"')
                     else:
                         inner_text += f"{entry_value} "
@@ -537,11 +548,11 @@ class Crawler:
 
             # not very elegant, more like a placeholder
             if (
-                    (converted_node_name != "button" or meta == "")
-                    and converted_node_name != "link"
-                    and converted_node_name != "input"
-                    and converted_node_name != "img"
-                    and converted_node_name != "textarea"
+                (converted_node_name != "button" or meta == "")
+                and converted_node_name != "link"
+                and converted_node_name != "input"
+                and converted_node_name != "img"
+                and converted_node_name != "textarea"
             ) and inner_text.strip() == "":
                 continue
 
@@ -567,8 +578,8 @@ def run_natbot(goal: str, url: str):
 
     def print_help():
         print(
-            "(g) to visit url\n(u) scroll up\n(d) scroll down\n(c) to click\n(t) to type\n" +
-            "(h) to view commands again\n(r/enter) to run suggested command\n(o) change objective"
+            "(g) to visit url\n(u) scroll up\n(d) scroll down\n(c) to click\n(t) to type\n"
+            + "(h) to view commands again\n(r/enter) to run suggested command\n(o) change objective"
         )
 
     def get_gpt_command(objective, url, previous_command, browser_content):
@@ -578,7 +589,8 @@ def run_natbot(goal: str, url: str):
         prompt = prompt.replace("$previous_command", previous_command)
         prompt = prompt.replace("$browser_content", browser_content[:4500])
         response = client.chat.completions.create(
-            model="gpt-4-0125-preview", messages=[{"role": "system", "content": prompt}])
+            model="gpt-4-0125-preview", messages=[{"role": "system", "content": prompt}]
+        )
         return response.choices[0].message.content
 
     def run_cmd(cmd):
@@ -601,7 +613,7 @@ def run_natbot(goal: str, url: str):
             text = text[1:-1]
 
             if cmd.startswith("TYPESUBMIT"):
-                text += '\n'
+                text += "\n"
             _crawler.type(id, text)
 
         time.sleep(2)
@@ -617,18 +629,18 @@ def run_natbot(goal: str, url: str):
             browser_content = "\n".join(_crawler.crawl())
             prev_cmd = gpt_cmd
             gpt_cmd = get_gpt_command(
-                objective, _crawler.page.url, prev_cmd, browser_content)
+                objective, _crawler.page.url, prev_cmd, browser_content
+            )
             gpt_cmd = gpt_cmd.strip()
 
             if not quiet:
                 print("URL: " + _crawler.page.url)
                 print("Objective: " + objective)
-                print("----------------\n" +
-                      browser_content + "\n----------------\n")
+                print("----------------\n" + browser_content + "\n----------------\n")
             if len(gpt_cmd) > 0:
                 print("Suggested command: " + gpt_cmd)
 
-            if (gpt_cmd == "EXIT"):
+            if gpt_cmd == "EXIT":
                 print("Exiting.")
                 break
 

@@ -20,11 +20,11 @@ def log_individual():
     json = request.get_json()
     log = json.get("log")
 
-    with open(parent_folder + 'trajectories/log.txt', 'a') as file:
+    with open(parent_folder + "trajectories/log.txt", "a") as file:
         file.write(log + "\n")
 
     return jsonify({"log": log})
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(debug=True, port=os.getenv("FLASK_RUN_PORT"))
