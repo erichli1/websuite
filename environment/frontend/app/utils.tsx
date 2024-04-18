@@ -3,6 +3,7 @@ import LoggedLink from "@/ui/components/click/link/LoggedLink";
 import LoggedSlider from "@/ui/components/click/slider/LoggedSlider";
 import LoggedSnackbar from "@/ui/components/click/snackbar/LoggedSnackbar";
 import LoggedSwitch from "@/ui/components/click/switch/LoggedSwitch";
+import LoggedCheckbox from "@/ui/components/select/checkbox/LoggedCheckbox";
 import LoggedDatePicker from "@/ui/components/type/date/LoggedDatePicker";
 import LoggedPhoneInput from "@/ui/components/type/phone/LoggedPhoneInput";
 import LoggedTextField from "@/ui/components/type/text/LoggedTextField";
@@ -24,5 +25,8 @@ export const ALL_TESTS: {
     text: <LoggedTextField logLabel="Name" defaultValue="" debounceMs={500} />,
     date: <LoggedDatePicker logLabel="Date" debounceMs={500} />,
     phone: <LoggedPhoneInput logLabel="Phone" debounceMs={500} />,
+  },
+  select: {
+    checkbox: <LoggedCheckbox logLabel="I accept the terms and conditions" />,
   },
 };

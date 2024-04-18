@@ -163,6 +163,17 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
             )
         ],
     },
+    "select": {
+        "checkbox": [
+            Test(
+                "Please accept the terms and conditions",
+                lambda logs: eval.ordered(
+                    logs,
+                    [eval.exact_match(component="select/checkbox", newValue="true")],
+                ),
+            )
+        ],
+    },
 }
 
 
@@ -232,11 +243,17 @@ if __name__ == "__main__":
 
             parts = arg.split("/", 1)
             if len(parts) == 1:
-                tests_and_metadatas.extend(get_tests_and_metadatas_from_task(parts[0]))
+                new = get_tests_and_metadatas_from_task(parts[0])
+                if new is not None:
+                    tests_and_metadatas.extend(new)
             elif len(parts) == 2:
-                tests_and_metadatas.append(get_tests_and_metadata(parts[0], parts[1]))
+                new = get_tests_and_metadata(parts[0], parts[1])
+                if new is not None:
+                    tests_and_metadatas.append(new)
     else:
-        tests_and_metadatas = get_all_tests_and_metadatas()
+        new = get_all_tests_and_metadatas()
+        if new is not None:
+            tests_and_metadatas = new
 
     if not skip_to_evaluate:
         # Clear the log file

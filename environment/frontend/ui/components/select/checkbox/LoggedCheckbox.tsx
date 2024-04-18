@@ -1,29 +1,31 @@
-import Switch, { SwitchProps } from "@mui/material/Switch";
+import { log } from "@/ui/log";
+import Checkbox, { CheckboxProps } from "@mui/material/Checkbox";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import React from "react";
-import { log } from "@/ui/log";
 
-export type LoggedSwitchProps = SwitchProps & {
+export type LoggedCheckboxProps = Omit<CheckboxProps, "checked"> & {
   logLabel: string;
 };
 
-export default function LoggedSwitch(props: LoggedSwitchProps) {
-  const { logLabel, ...restProps } = props;
-  const [checked, setChecked] = React.useState(props.defaultChecked ?? false);
+export default function LoggedCheckbox(props: LoggedCheckboxProps) {
+  const { logLabel, defaultChecked, ...restProps } = props;
+
+  const [checked, setChecked] = React.useState(defaultChecked ?? false);
 
   return (
     <FormControlLabel
       control={
-        <Switch
+        <Checkbox
           {...restProps}
+          checked={checked}
           onChange={(event, newChecked) => {
-            setChecked(newChecked);
             log({
-              component: "click/switch",
+              component: "select/checkbox",
               label: logLabel,
               newVal: newChecked ? "true" : "false",
               oldVal: checked ? "true" : "false",
             });
+            setChecked(newChecked);
             props.onChange?.(event, checked);
           }}
         />
