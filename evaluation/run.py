@@ -124,6 +124,16 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
             ),
         ],
     },
+    "type": {
+        "text": [
+            Test(
+                "Enter the name John",
+                lambda logs: eval.ordered(
+                    logs, [eval.exact_match(component="type/text", newValue="John")]
+                ),
+            )
+        ]
+    },
 }
 
 
