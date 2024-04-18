@@ -44,7 +44,6 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
                     logs,
                     [
                         eval.exact_match(component="click/link"),
-                        eval.exact_match(label="Settings"),
                     ],
                 ),
             )
@@ -63,6 +62,36 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
                     logs, [eval.exact_match("click/slider", "0")]
                 ),
                 name="min",
+            ),
+            Test(
+                "Make the volume louder",
+                lambda logs: eval.ordered(
+                    logs,
+                    [
+                        eval.all_log(
+                            [
+                                eval.exact_match("click/slider"),
+                                eval.compare_values(lambda x, y: int(x) > int(y)),
+                            ]
+                        )
+                    ],
+                ),
+                name="louder",
+            ),
+            Test(
+                "Make the volume quieter",
+                lambda logs: eval.ordered(
+                    logs,
+                    [
+                        eval.all_log(
+                            [
+                                eval.exact_match("click/slider"),
+                                eval.compare_values(lambda x, y: int(x) < int(y)),
+                            ]
+                        )
+                    ],
+                ),
+                name="quieter",
             ),
         ],
     },

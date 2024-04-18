@@ -1,4 +1,4 @@
-from typing import Callable, List, TypeAlias
+from typing import Callable, TypeAlias
 
 
 class Log:
@@ -11,24 +11,20 @@ class Log:
         self.oldValue = log_parts[3] if len(log_parts) > 3 else None
 
 
-LogListEvaluator: TypeAlias = Callable[[List[Log]], bool]
+LogListEvaluator: TypeAlias = Callable[[list[Log]], bool]
 LogEvaluator: TypeAlias = Callable[[Log], bool]
 
 
 class Eval:
     @staticmethod
-    def satisfy_all_evals(logs: List[Log], evaluators: list[LogListEvaluator]) -> bool:
-        return all(evaluator(logs) for evaluator in evaluators)
-
-    @staticmethod
-    def ordered(logs: List[Log], evaluators: list[LogEvaluator]) -> bool:
+    def ordered(logs: list[Log], evaluators: list[LogEvaluator]) -> bool:
         return len(logs) == len(evaluators) and all(
             evaluator(logs[i]) for i, evaluator in enumerate(evaluators)
         )
 
     @staticmethod
-    def len_match(num: int) -> LogListEvaluator:
-        return lambda logs: len(logs) == num
+    def all_log(evaluators: list[LogEvaluator]) -> LogEvaluator:
+        return lambda log: all(evaluator(log) for evaluator in evaluators)
 
     @staticmethod
     def exact_match(
@@ -43,3 +39,7 @@ class Eval:
             and (newValue is None or log.newValue == newValue)
             and (oldValue is None or log.oldValue == oldValue)
         )
+
+    @staticmethod
+    def compare_values(compare: Callable[[str, str], bool]) -> LogEvaluator:
+        return lambda log: compare(log.newValue, log.oldValue)

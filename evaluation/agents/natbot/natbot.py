@@ -589,7 +589,7 @@ def run_natbot(goal: str, url: str):
         prompt = prompt.replace("$previous_command", previous_command)
         prompt = prompt.replace("$browser_content", browser_content[:4500])
         response = client.chat.completions.create(
-            model="gpt-4-0125-preview", messages=[{"role": "system", "content": prompt}]
+            model="gpt-4-turbo", messages=[{"role": "system", "content": prompt}]
         )
         return response.choices[0].message.content
 
