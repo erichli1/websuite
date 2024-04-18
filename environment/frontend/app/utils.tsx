@@ -1,5 +1,6 @@
 import LoggedButton from "@/ui/components/click/button/LoggedButton";
 import LoggedConfirmButton from "@/ui/components/click/confirmbutton/LoggedConfirmButton";
+import LoggedIconButton from "@/ui/components/click/iconbutton/LoggedIconButton";
 import LoggedLink from "@/ui/components/click/link/LoggedLink";
 import LoggedMenu from "@/ui/components/click/menu/LoggedMenu";
 import LoggedSlider from "@/ui/components/click/slider/LoggedSlider";
@@ -10,6 +11,7 @@ import LoggedSelect from "@/ui/components/select/select/LoggedSelect";
 import LoggedDatePicker from "@/ui/components/type/date/LoggedDatePicker";
 import LoggedPhoneInput from "@/ui/components/type/phone/LoggedPhoneInput";
 import LoggedTextField from "@/ui/components/type/text/LoggedTextField";
+import { Delete } from "@mui/icons-material";
 import { Box, FormGroup } from "@mui/material";
 import React from "react";
 
@@ -28,6 +30,7 @@ export const ALL_TESTS: {
         cancel={{ label: "No" }}
       />
     ),
+    iconbutton: <LoggedIconButton logLabel="Delete" icon={<Delete />} />,
     link: <LoggedLink logLabel="Settings" href="#" />,
     slider: <LoggedSlider logLabel="Volume" defaultValue={30} />,
     snackbar: <LoggedSnackbar logLabel="Message sent" />,

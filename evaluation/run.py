@@ -45,6 +45,14 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
                 ),
             )
         ],
+        "iconbutton": [
+            Test(
+                "Delete the item",
+                lambda logs: eval.ordered(
+                    logs, [eval.exact_match(component="click/iconbutton")]
+                ),
+            )
+        ],
         "link": [
             Test(
                 "Click the link",
