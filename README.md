@@ -10,5 +10,5 @@
 ## evaluation
 
 1. Add agent as a package under agents/
-2. Import your agent and replace `run_natbot(goal, url)` in `evaluation/utils`
-3. Run `python -m evaluation.utils` to run the entire individual test suite. You can add `click` as an arg to run all the click tests or specify specific tests with `click/button` or `click/link`
+2. Import your agent and replace `run_natbot(goal, url)` in `evaluation/run`
+3. Run `python -m evaluation.run` to run the entire individual test suite. You can add `click` as an arg to run all the click tests or specify specific tests with `click/button` or `click/link`
