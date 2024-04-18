@@ -17,7 +17,8 @@
     "dayjs": "^1.11.10",
     "next": "14.1.4",
     "react": "^18",
-    "react-dom": "^18"
+    "react-dom": "^18",
+    "react-imask": "^7.6.0"
   },
   "devDependencies": {
     "@types/node": "^20",

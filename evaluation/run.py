@@ -149,6 +149,19 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
                 ),
             )
         ],
+        "phone": [
+            Test(
+                "Please enter 617-495-1000",
+                lambda logs: eval.ordered(
+                    logs,
+                    [
+                        eval.exact_match(
+                            component="type/phone", newValue="(617) 495-1000"
+                        )
+                    ],
+                ),
+            )
+        ],
     },
 }
 
