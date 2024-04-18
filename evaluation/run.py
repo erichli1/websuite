@@ -94,6 +94,21 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
                 name="quieter",
             ),
         ],
+        "snackbar": [
+            Test(
+                "Dismiss the notification",
+                lambda logs: eval.ordered(
+                    logs,
+                    [
+                        eval.exact_match(
+                            component="click/snackbar",
+                            newValue="closed",
+                            oldValue="open",
+                        ),
+                    ],
+                ),
+            ),
+        ],
     },
 }
 
