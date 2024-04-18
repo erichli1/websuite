@@ -6,10 +6,11 @@ import LoggedSlider from "@/ui/components/click/slider/LoggedSlider";
 import LoggedSnackbar from "@/ui/components/click/snackbar/LoggedSnackbar";
 import LoggedSwitch from "@/ui/components/click/switch/LoggedSwitch";
 import LoggedCheckbox from "@/ui/components/select/checkbox/LoggedCheckbox";
+import LoggedSelect from "@/ui/components/select/select/LoggedSelect";
 import LoggedDatePicker from "@/ui/components/type/date/LoggedDatePicker";
 import LoggedPhoneInput from "@/ui/components/type/phone/LoggedPhoneInput";
 import LoggedTextField from "@/ui/components/type/text/LoggedTextField";
-import FormGroup from "@mui/material/FormGroup";
+import { Box, FormGroup } from "@mui/material";
 import React from "react";
 
 export const ALL_TESTS: {
@@ -53,6 +54,18 @@ export const ALL_TESTS: {
         <LoggedCheckbox logLabel="I accept the terms and conditions" />
         <LoggedCheckbox logLabel="I understand the privacy policy" />
       </FormGroup>
+    ),
+    select: (
+      <Box sx={{ width: 250 }}>
+        <LoggedSelect
+          logLabel="Country"
+          menuItems={[
+            { label: "USA" },
+            { label: "Canada" },
+            { label: "Mexico" },
+          ]}
+        />
+      </Box>
     ),
   },
 };

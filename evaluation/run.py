@@ -180,6 +180,15 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
         ],
     },
     "select": {
+        "select": [
+            Test(
+                "Select Canada",
+                lambda logs: eval.ordered(
+                    logs,
+                    [eval.exact_match(component="select/select", newValue="Canada")],
+                ),
+            ),
+        ],
         "checkbox": [
             Test(
                 "Please accept the terms and conditions",
