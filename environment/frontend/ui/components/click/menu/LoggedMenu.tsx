@@ -7,6 +7,7 @@ import Menu, { MenuProps } from "@mui/material/Menu";
 import MenuItem, { MenuItemProps } from "@mui/material/MenuItem";
 import Typography from "@mui/material/Typography";
 import { log } from "@/ui/log";
+import LoggedIconButton from "../iconbutton/LoggedIconButton";
 
 export type LoggedMenuProps = Omit<MenuProps, "anchorEl" | "open"> & {
   menuItems: Array<LoggedMenuItemProps>;
@@ -32,16 +33,16 @@ export default function LoggedMenu(props: LoggedMenuProps) {
         <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
           News
         </Typography>
-        <IconButton
+        <LoggedIconButton
           size="large"
           edge="start"
           color="inherit"
           onClick={(event) => {
             setAnchorEl(event.currentTarget);
           }}
-        >
-          <MenuIcon />
-        </IconButton>
+          logLabel="Menu"
+          icon={<MenuIcon />}
+        />
         <Menu
           {...restProps}
           anchorEl={anchorEl}

@@ -141,9 +141,9 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
         ],
         "menu": [
             Test(
-                "Click settings in the menu",
+                "Open the menu",
                 lambda logs: eval.ordered(
-                    logs, [eval.exact_match(component="click/menu", label="Settings")]
+                    logs, [eval.exact_match(component="click/iconbutton", label="Menu")]
                 ),
             ),
         ],
