@@ -667,6 +667,9 @@ def run_natbot(goal: str, url: str):
                 time.sleep(1)
             elif command == "o":
                 objective = input("Objective:")
+            elif command == "EXIT":
+                print("Exiting.")
+                break
             else:
                 print_help()
     except KeyboardInterrupt:

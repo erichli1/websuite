@@ -109,6 +109,20 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
                 ),
             ),
         ],
+        "switch": [
+            Test(
+                "Turn on do not disturb",
+                lambda logs: eval.ordered(
+                    logs, [eval.exact_match(component="click/switch", newValue="true")]
+                ),
+                "on-from-off",
+            ),
+            Test(
+                "Turn off do not disturb",
+                lambda logs: eval.no_logs(logs),
+                "off-from-off",
+            ),
+        ],
     },
 }
 
@@ -169,9 +183,14 @@ def get_all_tests_and_metadatas() -> list[TestsAndMetadata] | None:
 
 if __name__ == "__main__":
     # Identify the right goals and urls to iterate through
+    skip_to_evaluate = False
     tests_and_metadatas = []
     if len(sys.argv) > 1:
         for i, arg in enumerate(sys.argv[1:]):
+            if arg == "evaluate_logs":
+                skip_to_evaluate = True
+                break
+
             parts = arg.split("/", 1)
             if len(parts) == 1:
                 tests_and_metadatas.extend(get_tests_and_metadatas_from_task(parts[0]))
@@ -180,18 +199,19 @@ if __name__ == "__main__":
     else:
         tests_and_metadatas = get_all_tests_and_metadatas()
 
-    # Clear the log file
-    with open(PARENT_FOLDER + "trajectories/log.txt", "w") as file:
-        pass
+    if not skip_to_evaluate:
+        # Clear the log file
+        with open(PARENT_FOLDER + "trajectories/log.txt", "w") as file:
+            pass
 
-    # Run the tests
-    for tests, metadata in tests_and_metadatas:
-        for test in tests:
-            with open(PARENT_FOLDER + "trajectories/log.txt", "a") as file:
-                file.write(f"TEST BEGIN: {metadata[0]}/{metadata[1]} {test.name}\n")
-            run_natbot(test.goal, get_url(LOCALHOST_PORT, *metadata))
-            with open(PARENT_FOLDER + "trajectories/log.txt", "a") as file:
-                file.write("TEST FINISH\n")
+        # Run the tests
+        for tests, metadata in tests_and_metadatas:
+            for test in tests:
+                with open(PARENT_FOLDER + "trajectories/log.txt", "a") as file:
+                    file.write(f"TEST BEGIN: {metadata[0]}/{metadata[1]} {test.name}\n")
+                run_natbot(test.goal, get_url(LOCALHOST_PORT, *metadata))
+                with open(PARENT_FOLDER + "trajectories/log.txt", "a") as file:
+                    file.write("TEST FINISH\n")
 
     # Evaluate the log file
     eval_dict = get_evals_dict(PARENT_FOLDER + "trajectories/log.txt")

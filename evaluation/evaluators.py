@@ -17,6 +17,10 @@ LogEvaluator: TypeAlias = Callable[[Log], bool]
 
 class Eval:
     @staticmethod
+    def no_logs(logs: list[Log]) -> bool:
+        return len(logs) == 0
+
+    @staticmethod
     def ordered(logs: list[Log], evaluators: list[LogEvaluator]) -> bool:
         return len(logs) == len(evaluators) and all(
             evaluator(logs[i]) for i, evaluator in enumerate(evaluators)
