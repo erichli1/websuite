@@ -1,5 +1,6 @@
 import LoggedButton from "@/ui/components/click/button/LoggedButton";
 import LoggedLink from "@/ui/components/click/link/LoggedLink";
+import LoggedMenu from "@/ui/components/click/menu/LoggedMenu";
 import LoggedSlider from "@/ui/components/click/slider/LoggedSlider";
 import LoggedSnackbar from "@/ui/components/click/snackbar/LoggedSnackbar";
 import LoggedSwitch from "@/ui/components/click/switch/LoggedSwitch";
@@ -21,6 +22,15 @@ export const ALL_TESTS: {
     slider: <LoggedSlider logLabel="Volume" defaultValue={30} />,
     snackbar: <LoggedSnackbar logLabel="Message sent" />,
     switch: <LoggedSwitch logLabel="Do not disturb" defaultChecked={false} />,
+    menu: (
+      <LoggedMenu
+        menuItems={[
+          { logLabel: "Profile" },
+          { logLabel: "Settings" },
+          { logLabel: "Log out" },
+        ]}
+      />
+    ),
   },
   type: {
     text: <LoggedTextField logLabel="Name" defaultValue="" debounceMs={500} />,

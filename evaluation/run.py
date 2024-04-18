@@ -123,6 +123,14 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
                 "off-from-off",
             ),
         ],
+        "menu": [
+            Test(
+                "Click settings in the menu",
+                lambda logs: eval.ordered(
+                    logs, [eval.exact_match(component="click/menu", label="Settings")]
+                ),
+            ),
+        ],
     },
     "type": {
         "text": [
