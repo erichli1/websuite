@@ -3,7 +3,7 @@ from evaluation.agents.natbot.natbot import run_natbot
 import sys
 import os
 import re
-from evaluation.evaluators import Eval as eval
+from evaluation.evaluators import Eval as eval, Log
 from evaluation.utils import flatten, get_evals_dict, get_url
 
 
@@ -32,42 +32,35 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
         "button": [
             Test(
                 "Click the button",
-                lambda logs: eval.all(
-                    logs,
-                    [eval.len_match(1), eval.contains_partial_match("click/button")],
+                lambda logs: eval.ordered(
+                    logs, [eval.exact_match(component="click/button")]
                 ),
             )
         ],
         "link": [
             Test(
                 "Click the link",
-                lambda logs: eval.all(
-                    logs, [eval.len_match(1), eval.contains_partial_match("click/link")]
+                lambda logs: eval.ordered(
+                    logs,
+                    [
+                        eval.exact_match(component="click/link"),
+                        eval.exact_match(label="Settings"),
+                    ],
                 ),
             )
         ],
         "slider": [
             Test(
                 "Adjust the volume to be the maximum",
-                lambda logs: eval.all(
-                    logs,
-                    [
-                        eval.len_match(1),
-                        eval.contains_partial_match("click/slider"),
-                        eval.contains_partial_match("100"),
-                    ],
+                lambda logs: eval.ordered(
+                    logs, [eval.exact_match("click/slider", "100")]
                 ),
                 name="max",
             ),
             Test(
                 "Adjust the volume to be the minimum",
-                lambda logs: eval.all(
-                    logs,
-                    [
-                        eval.len_match(1),
-                        eval.contains_partial_match("click/slider"),
-                        eval.contains_partial_match("0"),
-                    ],
+                lambda logs: eval.ordered(
+                    logs, [eval.exact_match("click/slider", "0")]
                 ),
                 name="min",
             ),
@@ -159,5 +152,6 @@ if __name__ == "__main__":
     # Evaluate the log file
     eval_dict = get_evals_dict(PARENT_FOLDER + "trajectories/log.txt")
     for key, items in eval_dict.items():
+        logs = [Log(item) for item in items]
         test, metadata = get_specific_test_and_metadata(*re.split(r"[ /]", key))
-        print(f"{key}: {test.eval(items)}")
+        print(f"{key}: {test.eval(logs)}")
