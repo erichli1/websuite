@@ -1,20 +1,29 @@
 from typing import Any, Callable, Dict, TypeAlias
-from evaluation.agents.natbot.natbot import run_natbot
 import sys
 import os
 import re
 from evaluation.evaluators import Eval as eval, Log
 from evaluation.utils import flatten, get_evals_dict, get_url
+import subprocess
+import threading
+import time
 
 
 ## HELPFUL TYPES AND CONSTANTS
 
 
 class Test:
-    def __init__(self, goal: str, eval: Callable[[list[str]], bool], name: str = None):
+    def __init__(
+        self,
+        goal: str,
+        eval: Callable[[list[str]], bool],
+        name: str = None,
+        max_lines: int | None = None,
+    ):
         self.goal = goal
         self.eval = eval
         self.name = "default" if name is None else name
+        self.max_lines = max_lines
 
     def eval(self, response: list[str]) -> bool:
         return self.eval(response)
@@ -25,6 +34,7 @@ TestsAndMetadata: TypeAlias = tuple[list[Test], tuple[str, str]]
 
 PARENT_FOLDER = os.path.join(os.path.dirname(__file__), "../")
 LOCALHOST_PORT = 3000  # needs to be in sync with /environment/frontend/package.json
+MAX_AGENT_TIME = 60  # seconds
 
 
 ind_tests: Dict[str, Dict[str, list[Test]]] = {
@@ -233,6 +243,17 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
             )
         ],
     },
+    "menu": {
+        "basic": [
+            Test(
+                "Please navigate to the page where I can change my privacy settings",
+                lambda logs: eval.ordered(
+                    logs, [eval.exact_match(component="click/button", label="Settings")]
+                ),
+                max_lines=1,
+            )
+        ]
+    },
 }
 
 
@@ -287,6 +308,43 @@ def get_all_tests_and_metadatas() -> list[TestsAndMetadata] | None:
     )
 
 
+## AGENT RUNNING SCAFFOLDING
+
+
+def check_log_file(process, line_threshold: int):
+    while process.poll() is None:
+        with open(PARENT_FOLDER + "trajectories/log.txt", "r") as file:
+            lines = file.readlines()
+            if len(lines) >= line_threshold:
+                process.terminate()
+                print("Process terminated due to excess log entries.")
+                return
+        time.sleep(1)
+
+
+def run_with_log_monitoring(command: str, line_threshold: int):
+    process = subprocess.Popen(command, shell=True)
+
+    # Start thread to monitor the log file
+    log_thread = threading.Thread(target=check_log_file, args=(process, line_threshold))
+    log_thread.start()
+
+    process.wait()
+    log_thread.join()
+
+
+def run_agent_with_limits(
+    goal: str, url: str, timeout: int | None = None, line_threshold: int | None = None
+):
+    command = f"""python -m evaluation.agent "{goal}" {url} {timeout}"""
+    if line_threshold is not None:
+        print(f"    Running with log line threshold of {line_threshold}")
+        run_with_log_monitoring(command, line_threshold)
+    else:
+        process = subprocess.Popen(command, shell=True)
+        process.wait()
+
+
 ## RUNNING THE EVALUATION
 
 
@@ -324,7 +382,21 @@ if __name__ == "__main__":
             for test in tests:
                 with open(PARENT_FOLDER + "trajectories/log.txt", "a") as file:
                     file.write(f"TEST BEGIN: {metadata[0]}/{metadata[1]} {test.name}\n")
-                run_natbot(test.goal, get_url(LOCALHOST_PORT, *metadata))
+
+                existing_lines = 0
+                with open(PARENT_FOLDER + "trajectories/log.txt", "r") as file:
+                    existing_lines = len(file.readlines())
+                run_agent_with_limits(
+                    goal=test.goal,
+                    url=get_url(LOCALHOST_PORT, *metadata),
+                    timeout=MAX_AGENT_TIME,
+                    line_threshold=(
+                        existing_lines + test.max_lines
+                        if test.max_lines is not None
+                        else None
+                    ),
+                )
+
                 with open(PARENT_FOLDER + "trajectories/log.txt", "a") as file:
                     file.write("TEST FINISH\n")
 
