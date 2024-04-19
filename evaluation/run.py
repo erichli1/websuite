@@ -347,12 +347,16 @@ def run_with_log_monitoring(command: str, line_threshold: int):
 
 
 def run_agent_with_limits(
-    goal: str, url: str, timeout: int | None = None, line_threshold: int | None = None
+    goal: str,
+    url: str,
+    existing_lines: int,
+    timeout: int | None = None,
+    addl_lines: int | None = None,
 ):
     command = f"""python -m evaluation.agent "{goal}" {url} {timeout}"""
-    if line_threshold is not None:
-        print(f"    Running with log line threshold of {line_threshold}")
-        run_with_log_monitoring(command, line_threshold)
+    if addl_lines is not None:
+        print(f"    Running with log line threshold of {addl_lines}")
+        run_with_log_monitoring(command, addl_lines + existing_lines)
     else:
         process = subprocess.Popen(command, shell=True)
         process.wait()
@@ -402,12 +406,9 @@ if __name__ == "__main__":
                 run_agent_with_limits(
                     goal=test.goal,
                     url=get_url(LOCALHOST_PORT, *metadata),
+                    existing_lines=existing_lines,
                     timeout=MAX_AGENT_TIME,
-                    line_threshold=(
-                        existing_lines + test.max_lines
-                        if test.max_lines is not None
-                        else None
-                    ),
+                    addl_lines=test.max_lines,
                 )
 
                 with open(PARENT_FOLDER + "trajectories/log.txt", "a") as file:
