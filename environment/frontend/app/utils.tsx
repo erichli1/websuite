@@ -2,7 +2,6 @@ import LoggedButton from "@/ui/components/click/button/LoggedButton";
 import LoggedConfirmButton from "@/ui/components/click/confirmbutton/LoggedConfirmButton";
 import LoggedIconButton from "@/ui/components/click/iconbutton/LoggedIconButton";
 import LoggedLink from "@/ui/components/click/link/LoggedLink";
-import LoggedDropdownMenu from "@/ui/components/click/dropdownmenu/LoggedDropdownMenu";
 import LoggedSlider from "@/ui/components/click/slider/LoggedSlider";
 import LoggedSnackbar from "@/ui/components/click/snackbar/LoggedSnackbar";
 import LoggedSwitch from "@/ui/components/click/switch/LoggedSwitch";
@@ -14,6 +13,11 @@ import LoggedTextField from "@/ui/components/type/text/LoggedTextField";
 import { Delete } from "@mui/icons-material";
 import { Box, FormGroup } from "@mui/material";
 import React from "react";
+import {
+  DefaultMenuContainer,
+  DropdownMenuContainer,
+} from "../ui/containers/Menus";
+import { AppBarContainer } from "@/ui/containers/Appbars";
 
 export const ALL_TESTS: {
   [key: string]: {
@@ -36,13 +40,12 @@ export const ALL_TESTS: {
     snackbar: <LoggedSnackbar logLabel="Message sent" />,
     switch: <LoggedSwitch logLabel="Do not disturb" defaultChecked={false} />,
     dropdownmenu: (
-      <LoggedDropdownMenu
-        menuItems={[
-          { logLabel: "Profile" },
-          { logLabel: "Settings" },
-          { logLabel: "Log out" },
-        ]}
-      />
+      <AppBarContainer title="News">
+        <DropdownMenuContainer
+          logLabel="Menu"
+          items={["Profile", "Settings", "Log out"]}
+        />
+      </AppBarContainer>
     ),
   },
   type: {
@@ -69,6 +72,13 @@ export const ALL_TESTS: {
           ]}
         />
       </Box>
+    ),
+  },
+  menu: {
+    basic: (
+      <AppBarContainer title="Menu">
+        <DefaultMenuContainer items={["Profile", "Settings", "Log out"]} />
+      </AppBarContainer>
     ),
   },
 };
