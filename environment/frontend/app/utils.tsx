@@ -80,5 +80,25 @@ export const ALL_TESTS: {
         <DefaultMenuContainer items={["Profile", "Settings", "Log out"]} />
       </AppBarContainer>
     ),
+    nested: (
+      <AppBarContainer title="Menu">
+        <DefaultMenuContainer
+          items={[
+            "Profile",
+            {
+              label: "Settings",
+              subitems: [
+                "Account preferences",
+                "Sign in & security",
+                "Visibility",
+                "Data privacy",
+                "Notifications",
+              ],
+            },
+            "Log out",
+          ]}
+        />
+      </AppBarContainer>
+    ),
   },
 };

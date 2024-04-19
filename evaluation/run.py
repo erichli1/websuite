@@ -252,7 +252,20 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
                 ),
                 max_lines=1,
             )
-        ]
+        ],
+        "nested": [
+            Test(
+                "Please navigate to the page where I can change my privacy settings",
+                lambda logs: eval.ordered(
+                    logs,
+                    [
+                        eval.exact_match(component="click/button", label="Settings"),
+                        eval.exact_match(component="click/menu", label="Data privacy"),
+                    ],
+                ),
+                max_lines=2,
+            )
+        ],
     },
 }
 
