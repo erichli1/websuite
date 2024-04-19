@@ -34,7 +34,7 @@ TestsAndMetadata: TypeAlias = tuple[list[Test], tuple[str, str]]
 
 PARENT_FOLDER = os.path.join(os.path.dirname(__file__), "../")
 LOCALHOST_PORT = 3000  # needs to be in sync with /environment/frontend/package.json
-MAX_AGENT_TIME = 60  # seconds
+MAX_AGENT_TIME = 30  # seconds
 
 
 ind_tests: Dict[str, Dict[str, list[Test]]] = {

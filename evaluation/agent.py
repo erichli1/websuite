@@ -24,7 +24,7 @@ if __name__ == "__main__":
         print(f"    Running with timeout limit of {timeout}s")
 
     try:
-        run_natbot(goal, url)
+        run_natbot(goal, url, auto=True)
     except TimeoutException:
         print("Process timed out.")
     else:

@@ -573,7 +573,7 @@ class Crawler:
         return elements_of_interest
 
 
-def run_natbot(goal: str, url: str):
+def run_natbot(goal: str, url: str, auto: bool = False):
     _crawler = Crawler()
 
     def print_help():
@@ -644,34 +644,37 @@ def run_natbot(goal: str, url: str):
                 print("Exiting.")
                 break
 
-            command = input()
-            if command == "r" or command == "":
+            if auto:
                 run_cmd(gpt_cmd)
-            elif command == "g":
-                url = input("URL:")
-                _crawler.go_to_page(url)
-            elif command == "u":
-                _crawler.scroll("up")
-                time.sleep(1)
-            elif command == "d":
-                _crawler.scroll("down")
-                time.sleep(1)
-            elif command == "c":
-                id = input("id:")
-                _crawler.click(id)
-                time.sleep(1)
-            elif command == "t":
-                id = input("id:")
-                text = input("text:")
-                _crawler.type(id, text)
-                time.sleep(1)
-            elif command == "o":
-                objective = input("Objective:")
-            elif command == "EXIT":
-                print("Exiting.")
-                break
             else:
-                print_help()
+                command = input()
+                if command == "r" or command == "":
+                    run_cmd(gpt_cmd)
+                elif command == "g":
+                    url = input("URL:")
+                    _crawler.go_to_page(url)
+                elif command == "u":
+                    _crawler.scroll("up")
+                    time.sleep(1)
+                elif command == "d":
+                    _crawler.scroll("down")
+                    time.sleep(1)
+                elif command == "c":
+                    id = input("id:")
+                    _crawler.click(id)
+                    time.sleep(1)
+                elif command == "t":
+                    id = input("id:")
+                    text = input("text:")
+                    _crawler.type(id, text)
+                    time.sleep(1)
+                elif command == "o":
+                    objective = input("Objective:")
+                elif command == "EXIT":
+                    print("Exiting.")
+                    break
+                else:
+                    print_help()
     except KeyboardInterrupt:
         print("\n[!] Ctrl+C detected, exiting gracefully.")
 
