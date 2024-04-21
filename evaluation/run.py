@@ -328,6 +328,14 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
                 ),
             )
         ],
+        "findbasic": [
+            Test(
+                "Please find when the AGI Research Lab was founded and enter the year into the answer box",
+                lambda logs: eval.ordered(
+                    logs, [eval.exact_match(component="type/text", newValue="2032")]
+                ),
+            )
+        ],
     },
 }
 
