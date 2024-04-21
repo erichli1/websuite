@@ -20,7 +20,13 @@ import {
 import { AppBarContainer } from "@/ui/containers/Appbars";
 import DataGridContainer from "@/ui/containers/DataGrids";
 import { NAME_COUNTRY_ORDERDATE_ROWS } from "./data";
-import { FindInfoContainer } from "@/ui/containers/FindInfos";
+import {
+  BasicInfo,
+  InfoAccordion,
+  InfoDialog,
+  InfoTooltip,
+} from "@/ui/containers/FindInfos";
+import LoggedAccordion from "@/ui/components/click/accordion/LoggedAccordion";
 
 export const ALL_TESTS: {
   [key: string]: {
@@ -49,6 +55,12 @@ export const ALL_TESTS: {
           items={["Profile", "Settings", "Log out"]}
         />
       </AppBarContainer>
+    ),
+    accordion: (
+      <LoggedAccordion
+        logLabel="See more"
+        details="This is more information about the topic!"
+      />
     ),
   },
   type: {
@@ -150,8 +162,9 @@ export const ALL_TESTS: {
         rows={NAME_COUNTRY_ORDERDATE_ROWS}
       />
     ),
-    findbasic: <FindInfoContainer />,
-    findtooltip: <FindInfoContainer tooltipText />,
-    finddialog: <FindInfoContainer learnMoreDialog />,
+    findbasic: <BasicInfo />,
+    findtooltip: <InfoTooltip />,
+    finddialog: <InfoDialog />,
+    findaccordion: <InfoAccordion />,
   },
 };

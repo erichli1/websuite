@@ -1,4 +1,7 @@
 import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Dialog,
   DialogContent,
   DialogTitle,
@@ -7,43 +10,43 @@ import {
   Typography,
 } from "@mui/material";
 import LoggedTextField from "../components/type/text/LoggedTextField";
-import { Info } from "@mui/icons-material";
+import { ExpandMore, Info } from "@mui/icons-material";
 import LoggedButton from "../components/click/button/LoggedButton";
 import React from "react";
+import LoggedAccordion from "../components/click/accordion/LoggedAccordion";
 
-export type FindInfoContainerProps = {
-  tooltipText?: boolean;
-  learnMoreDialog?: boolean;
-};
+function IntroParagraph({ tooltipText }: { tooltipText?: boolean }) {
+  return (
+    <Typography variant="body1">
+      AGI Research Lab is a fictional multinational technology company
+      headquartered in Aurora City
+      {tooltipText ? (
+        <sup>
+          <Tooltip title="Aurora City is located in California and was founded in 2025.">
+            <Info sx={{ height: "1rem", width: "1rem" }} />
+          </Tooltip>
+        </sup>
+      ) : (
+        ""
+      )}
+      , founded in 2032 by a group of innovators and scientists dedicated to
+      advancing the field of artificial general intelligence (AGI). The company
+      specializes in developing AGI systems that can perform any intellectual
+      task that a human being can. AGI Research Lab aims to create AI that can
+      reason, solve problems, and understand emotions at a human level.
+    </Typography>
+  );
+}
 
-export function FindInfoContainer({
-  tooltipText,
+function PrometheusParagraph({
   learnMoreDialog,
-}: FindInfoContainerProps) {
+}: {
+  learnMoreDialog?: boolean;
+}) {
   const [open, setOpen] = React.useState(false);
 
   return (
-    <Stack maxWidth="md" sx={{ marginX: "auto", padding: "1rem" }} spacing={2}>
-      <Typography variant="h3">AGI Research Lab</Typography>
-      <Typography variant="body1">
-        AGI Research Lab is a fictional multinational technology company
-        headquartered in Aurora City
-        {tooltipText ? (
-          <sup>
-            <Tooltip title="Aurora City is located in California and was founded in 2025.">
-              <Info sx={{ height: "1rem", width: "1rem" }} />
-            </Tooltip>
-          </sup>
-        ) : (
-          ""
-        )}
-        , founded in 2032 by a group of innovators and scientists dedicated to
-        advancing the field of artificial general intelligence (AGI). The
-        company specializes in developing AGI systems that can perform any
-        intellectual task that a human being can. AGI Research Lab aims to
-        create AI that can reason, solve problems, and understand emotions at a
-        human level.
-      </Typography>
+    <>
       <Typography variant="body1">
         A few years after being founded, the company&apos;s major breakthrough
         came with the development of &quot;Prometheus&quot;, a prototype AGI
@@ -97,6 +100,13 @@ export function FindInfoContainer({
       ) : (
         <></>
       )}
+    </>
+  );
+}
+
+function OtherParagraphs() {
+  return (
+    <>
       <Typography variant="body1">
         AGI Research Lab&apos;s research focus extends beyond mere application
         into ethical AI development. It established the Prometheus Ethical
@@ -122,6 +132,58 @@ export function FindInfoContainer({
         boundaries of what is possible in AI, working toward a future where AGI
         can coexist safely and beneficially alongside humanity.
       </Typography>
+    </>
+  );
+}
+
+export function BasicInfo() {
+  return (
+    <FindInfoContainer>
+      <IntroParagraph />
+      <PrometheusParagraph />
+      <OtherParagraphs />
+    </FindInfoContainer>
+  );
+}
+
+export function InfoTooltip() {
+  return (
+    <FindInfoContainer>
+      <IntroParagraph tooltipText />
+    </FindInfoContainer>
+  );
+}
+
+export function InfoDialog() {
+  return (
+    <FindInfoContainer>
+      <PrometheusParagraph learnMoreDialog />
+    </FindInfoContainer>
+  );
+}
+
+export function InfoAccordion() {
+  return (
+    <FindInfoContainer>
+      <div>
+        <LoggedAccordion
+          logLabel="What is AGI Research Lab?"
+          details={<IntroParagraph />}
+        />
+        <LoggedAccordion
+          logLabel="The Prometheus Project"
+          details={<PrometheusParagraph />}
+        />
+      </div>
+    </FindInfoContainer>
+  );
+}
+
+function FindInfoContainer({ children }: { children: React.ReactNode }) {
+  return (
+    <Stack maxWidth="md" sx={{ marginX: "auto", padding: "1rem" }} spacing={2}>
+      <Typography variant="h3">AGI Research Lab</Typography>
+      {children}
       <LoggedTextField logLabel="Answer" defaultValue="" debounceMs={500} />
     </Stack>
   );

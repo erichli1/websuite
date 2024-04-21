@@ -157,6 +157,15 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
                 ),
             ),
         ],
+        "accordion": [
+            Test(
+                "Please open the accordion to see more",
+                lambda logs: eval.ordered(
+                    logs,
+                    [eval.exact_match(component="click/accordion", newValue="open")],
+                ),
+            )
+        ],
     },
     "type": {
         "text": [
@@ -352,6 +361,14 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
                     logs, [eval.exact_match(component="type/text", newValue="2036")]
                 ),
             ),
+        ],
+        "findaccordion": [
+            Test(
+                "Please find when the AGI Research Lab was founded and enter the year into the answer box",
+                lambda logs: eval.at_least_one(
+                    logs, [eval.exact_match(component="type/text", newValue="2032")]
+                ),
+            )
         ],
     },
 }
