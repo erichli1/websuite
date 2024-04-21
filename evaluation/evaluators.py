@@ -33,6 +33,10 @@ class Eval:
         )
 
     @staticmethod
+    def at_least_one(logs: list[Log], evaluators: list[LogEvaluator]) -> bool:
+        return any(any(evaluator(log) for evaluator in evaluators) for log in logs)
+
+    @staticmethod
     def all_log(evaluators: list[LogEvaluator]) -> LogEvaluator:
         return lambda log: all(evaluator(log) for evaluator in evaluators)
 

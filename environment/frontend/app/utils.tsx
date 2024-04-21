@@ -19,6 +19,7 @@ import {
 } from "../ui/containers/Menus";
 import { AppBarContainer } from "@/ui/containers/Appbars";
 import DataGridContainer from "@/ui/containers/DataGrids";
+import { NAME_COUNTRY_ORDERDATE_ROWS } from "./data";
 
 export const ALL_TESTS: {
   [key: string]: {
@@ -86,78 +87,7 @@ export const ALL_TESTS: {
           { field: "orderDate", headerName: "Order Date" },
         ]}
         gridLogLabel="Orders"
-        rows={[
-          {
-            name: "John Doe",
-            country: "USA",
-            orderDate: "2024-01-02",
-            id: "1",
-            logLabel: "John Doe",
-          },
-          {
-            name: "Jane Smith",
-            country: "Canada",
-            orderDate: "2024-01-11",
-            id: "2",
-            logLabel: "Jane Smith",
-          },
-          {
-            name: "Alice Johnson",
-            country: "UK",
-            orderDate: "2024-01-04",
-            id: "3",
-            logLabel: "Alice Johnson",
-          },
-          {
-            name: "Bob Brown",
-            country: "Australia",
-            orderDate: "2024-01-06",
-            id: "4",
-            logLabel: "Bob Brown",
-          },
-          {
-            name: "Mary Davis",
-            country: "Germany",
-            orderDate: "2024-01-06",
-            id: "5",
-            logLabel: "Mary Davis",
-          },
-          {
-            name: "Tom Wilson",
-            country: "France",
-            orderDate: "2024-01-05",
-            id: "6",
-            logLabel: "Tom Wilson",
-          },
-          {
-            name: "Sara Moore",
-            country: "Spain",
-            orderDate: "2024-01-10",
-            id: "7",
-            logLabel: "Sara Moore",
-          },
-          {
-            name: "James Taylor",
-            country: "Italy",
-            orderDate: "2024-01-11",
-            id: "8",
-            logLabel: "James Taylor",
-          },
-          {
-            name: "Patricia White",
-            country: "Netherlands",
-            orderDate: "2024-01-01",
-            id: "9",
-            logLabel: "Patricia White",
-          },
-          {
-            name: "Michael Harris",
-            country: "Sweden",
-            orderDate: "2024-01-08",
-            id: "10",
-            logLabel: "Michael Harris",
-          },
-        ]}
+        rows={NAME_COUNTRY_ORDERDATE_ROWS}
       />
     ),
   },
@@ -186,6 +116,23 @@ export const ALL_TESTS: {
           ]}
         />
       </AppBarContainer>
+    ),
+  },
+  info: {
+    gridfilter: (
+      <DataGridContainer<{
+        name: string;
+        country: string;
+        orderDate: string;
+      }>
+        columns={[
+          { field: "name", headerName: "Name" },
+          { field: "country", headerName: "Country" },
+          { field: "orderDate", headerName: "Order Date" },
+        ]}
+        gridLogLabel="Orders"
+        rows={NAME_COUNTRY_ORDERDATE_ROWS}
+      />
     ),
   },
 };

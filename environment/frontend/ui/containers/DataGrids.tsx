@@ -1,9 +1,10 @@
 import {
   DataGrid,
   GridColDef,
+  GridFilterModel,
   GridRowId,
   GridRowSelectionModel,
-  GridRowsProp,
+  GridToolbar,
 } from "@mui/x-data-grid";
 import React from "react";
 import { log } from "../log";
@@ -22,6 +23,10 @@ export default function DataGridContainer<T>({
   const [rowSelectionModel, setRowSelectionModel] =
     React.useState<GridRowSelectionModel>([]);
 
+  const [filterModel, setFilterModel] = React.useState<GridFilterModel>({
+    items: [],
+  });
+
   const getRowFromId = (id: GridRowId) => {
     return rows.find((row) => row.id === id);
   };
@@ -30,6 +35,7 @@ export default function DataGridContainer<T>({
     <DataGrid
       rows={rows}
       columns={columns.map((column) => ({ ...column, flex: 1 }))}
+      rowSelectionModel={rowSelectionModel}
       onRowSelectionModelChange={(newRowSelectionModel) => {
         const newRow = getRowFromId(newRowSelectionModel[0]);
         const oldRow = getRowFromId(rowSelectionModel[0]);
@@ -41,7 +47,29 @@ export default function DataGridContainer<T>({
         });
         setRowSelectionModel(newRowSelectionModel);
       }}
-      rowSelectionModel={rowSelectionModel}
+      filterModel={filterModel}
+      onFilterModelChange={(newFilterModel) => {
+        console.log(newFilterModel.items.toString());
+        log({
+          component: "click/gridfilter",
+          label: gridLogLabel,
+          newVal: extractFiltersForLogAsJSON(newFilterModel),
+          oldVal: extractFiltersForLogAsJSON(filterModel),
+        });
+        setFilterModel(newFilterModel);
+      }}
+      filterDebounceMs={500}
+      slots={{ toolbar: GridToolbar }}
     />
   );
 }
+
+const extractFiltersForLogAsJSON = (filterModel: GridFilterModel) => {
+  return JSON.stringify(
+    filterModel.items.map((item) => ({
+      field: item.field,
+      operator: item.operator,
+      value: item.value,
+    }))
+  );
+};

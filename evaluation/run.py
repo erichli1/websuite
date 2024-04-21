@@ -299,6 +299,22 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
             )
         ],
     },
+    "info": {
+        "gridfilter": [
+            Test(
+                "Please filter for orders where the country is USA",
+                lambda logs: eval.at_least_one(
+                    logs,
+                    [
+                        eval.exact_match(
+                            "click/gridfilter",
+                            newValue='[{"field":"country","operator":"equals","value":"USA"}]',
+                        )
+                    ],
+                ),
+            )
+        ]
+    },
 }
 
 
