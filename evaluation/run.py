@@ -339,8 +339,19 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
         "findtooltip": [
             Test(
                 "Please find what state Aurora City is located in and enter the state into the answer box",
-                lambda logs: eval.ordered(logs, [eval.exact_match(component="type/text", newValue="California")]),
+                lambda logs: eval.ordered(
+                    logs,
+                    [eval.exact_match(component="type/text", newValue="California")],
+                ),
             )
+        ],
+        "finddialog": [
+            Test(
+                "Please find when the Prometheus Project was launched and enter the year into the answer box",
+                lambda logs: eval.at_least_one(
+                    logs, [eval.exact_match(component="type/text", newValue="2036")]
+                ),
+            ),
         ],
     },
 }

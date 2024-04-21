@@ -152,5 +152,6 @@ export const ALL_TESTS: {
     ),
     findbasic: <FindInfoContainer />,
     findtooltip: <FindInfoContainer tooltipText />,
+    finddialog: <FindInfoContainer learnMoreDialog />,
   },
 };

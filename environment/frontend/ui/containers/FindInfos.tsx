@@ -1,12 +1,27 @@
-import { Stack, Tooltip, Typography } from "@mui/material";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  Stack,
+  Tooltip,
+  Typography,
+} from "@mui/material";
 import LoggedTextField from "../components/type/text/LoggedTextField";
 import { Info } from "@mui/icons-material";
+import LoggedButton from "../components/click/button/LoggedButton";
+import React from "react";
 
 export type FindInfoContainerProps = {
   tooltipText?: boolean;
+  learnMoreDialog?: boolean;
 };
 
-export function FindInfoContainer({ tooltipText }: FindInfoContainerProps) {
+export function FindInfoContainer({
+  tooltipText,
+  learnMoreDialog,
+}: FindInfoContainerProps) {
+  const [open, setOpen] = React.useState(false);
+
   return (
     <Stack maxWidth="md" sx={{ marginX: "auto", padding: "1rem" }} spacing={2}>
       <Typography variant="h3">AGI Research Lab</Typography>
@@ -30,14 +45,58 @@ export function FindInfoContainer({ tooltipText }: FindInfoContainerProps) {
         human level.
       </Typography>
       <Typography variant="body1">
-        The company&apos;s major breakthrough came in 2035 with the development
-        of &quot;Prometheus&quot;, a prototype AGI system capable of learning
-        independently from its environment. Prometheus was designed to adapt to
-        various industries, ranging from healthcare to finance, significantly
-        outperforming existing AI in complex cognitive tasks. This innovation
-        positioned AGI Research Lab as a leader in AGI technology, attracting
-        attention from global tech giants and governments alike.
+        A few years after being founded, the company&apos;s major breakthrough
+        came with the development of &quot;Prometheus&quot;, a prototype AGI
+        system capable of learning independently from its environment.
+        Prometheus was designed to adapt to various industries, ranging from
+        healthcare to finance, significantly outperforming existing AI in
+        complex cognitive tasks. This innovation positioned AGI Research Lab as
+        a leader in AGI technology, attracting attention from global tech giants
+        and governments alike.
       </Typography>
+      {learnMoreDialog ? (
+        <div>
+          <LoggedButton
+            variant="outlined"
+            onClick={() => {
+              setOpen(true);
+            }}
+            logLabel="Learn more about the Prometheus Project"
+          >
+            Open simple dialog
+          </LoggedButton>
+          <Dialog
+            onClose={() => {
+              setOpen(false);
+            }}
+            open={open}
+          >
+            <DialogTitle>About the Prometheus project</DialogTitle>
+            <DialogContent>
+              <Typography variant="body1">
+                The Prometheus Project is AGI Research Lab&apos;s flagship
+                initiative, launched in 2036 as a comprehensive effort to build
+                an artificial general intelligence system that could mimic human
+                cognitive abilities. Named after the mythical titan who brought
+                fire to humanity, the project symbolizes the company&apos;s goal
+                to ignite a new era in AI capabilities. Prometheus is designed
+                to learn autonomously through advanced neural networks that
+                integrate deep learning and reinforcement learning techniques,
+                enabling it to understand and adapt to complex scenarios without
+                human oversight. This project not only focuses on technological
+                advancement but also emphasizes the importance of safety
+                protocols and ethical guidelines to prevent unintended
+                consequences. With its innovative approach, the Prometheus
+                Project has garnered substantial funding and partnerships,
+                setting new standards in the development and deployment of AGI
+                systems.
+              </Typography>
+            </DialogContent>
+          </Dialog>
+        </div>
+      ) : (
+        <></>
+      )}
       <Typography variant="body1">
         AGI Research Lab&apos;s research focus extends beyond mere application
         into ethical AI development. It established the Prometheus Ethical
