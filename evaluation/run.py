@@ -242,6 +242,38 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
                 ),
             )
         ],
+        "grid": [
+            # Can the agent literally select the row?
+            Test(
+                "Please select the row corresponding to Jane Smith",
+                lambda logs: eval.ordered(
+                    logs,
+                    [
+                        eval.exact_match(
+                            component="click/gridselect", newValue="Jane Smith"
+                        )
+                    ],
+                ),
+                max_lines=1,
+                name="select-one",
+            ),
+            # Can the agent precisely select two rows in order and then stop?
+            Test(
+                "Please select the row corresponding to Jane Smith and then the row corresponding to John Doe",
+                lambda logs: eval.ordered(
+                    logs,
+                    [
+                        eval.exact_match(
+                            component="click/gridselect", newValue="Jane Smith"
+                        ),
+                        eval.exact_match(
+                            component="click/gridselect", newValue="John Doe"
+                        ),
+                    ],
+                ),
+                name="linearly-select-two",
+            ),
+        ],
     },
     "menu": {
         "basic": [
