@@ -307,13 +307,27 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
                     logs,
                     [
                         eval.exact_match(
-                            "click/gridfilter",
+                            component="click/gridfilter",
                             newValue='[{"field":"country","operator":"equals","value":"USA"}]',
                         )
                     ],
                 ),
             )
-        ]
+        ],
+        "gridsort": [
+            Test(
+                "Please sort the table by the name column in ascending order",
+                lambda logs: eval.ordered(
+                    logs,
+                    [
+                        eval.exact_match(
+                            component="click/gridsort",
+                            newValue='[{"field":"name","sort":"asc"}]',
+                        )
+                    ],
+                ),
+            )
+        ],
     },
 }
 

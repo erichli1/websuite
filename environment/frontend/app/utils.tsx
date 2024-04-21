@@ -134,5 +134,20 @@ export const ALL_TESTS: {
         rows={NAME_COUNTRY_ORDERDATE_ROWS}
       />
     ),
+    gridsort: (
+      <DataGridContainer<{
+        name: string;
+        country: string;
+        orderDate: string;
+      }>
+        columns={[
+          { field: "name", headerName: "Name" },
+          { field: "country", headerName: "Country" },
+          { field: "orderDate", headerName: "Order Date" },
+        ]}
+        gridLogLabel="Orders"
+        rows={NAME_COUNTRY_ORDERDATE_ROWS}
+      />
+    ),
   },
 };

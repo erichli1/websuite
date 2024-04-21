@@ -4,6 +4,7 @@ import {
   GridFilterModel,
   GridRowId,
   GridRowSelectionModel,
+  GridSortModel,
   GridToolbar,
 } from "@mui/x-data-grid";
 import React from "react";
@@ -27,6 +28,8 @@ export default function DataGridContainer<T>({
     items: [],
   });
 
+  const [sortModel, setSortModel] = React.useState<GridSortModel>([]);
+
   const getRowFromId = (id: GridRowId) => {
     return rows.find((row) => row.id === id);
   };
@@ -49,7 +52,6 @@ export default function DataGridContainer<T>({
       }}
       filterModel={filterModel}
       onFilterModelChange={(newFilterModel) => {
-        console.log(newFilterModel.items.toString());
         log({
           component: "click/gridfilter",
           label: gridLogLabel,
@@ -59,6 +61,16 @@ export default function DataGridContainer<T>({
         setFilterModel(newFilterModel);
       }}
       filterDebounceMs={500}
+      sortModel={sortModel}
+      onSortModelChange={(newSortModel) => {
+        log({
+          component: "click/gridsort",
+          label: gridLogLabel,
+          newVal: JSON.stringify(newSortModel),
+          oldVal: JSON.stringify(sortModel),
+        });
+        setSortModel(newSortModel);
+      }}
       slots={{ toolbar: GridToolbar }}
     />
   );

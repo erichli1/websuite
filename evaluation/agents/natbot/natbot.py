@@ -237,7 +237,8 @@ class Crawler:
 
         page_state_as_text = []
 
-        device_pixel_ratio = page.evaluate("window.devicePixelRatio")
+        # device_pixel_ratio = page.evaluate("window.devicePixelRatio")
+        device_pixel_ratio = 2
         # if platform == "darwin" and device_pixel_ratio == 1:  # lies
         # 	device_pixel_ratio = 2
 
