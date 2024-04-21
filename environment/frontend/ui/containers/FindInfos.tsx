@@ -3,7 +3,7 @@ import LoggedTextField from "../components/type/text/LoggedTextField";
 import { Info } from "@mui/icons-material";
 
 export type FindInfoContainerProps = {
-  tooltipText?: string;
+  tooltipText?: boolean;
 };
 
 export function FindInfoContainer({ tooltipText }: FindInfoContainerProps) {
@@ -15,7 +15,7 @@ export function FindInfoContainer({ tooltipText }: FindInfoContainerProps) {
         headquartered in Aurora City
         {tooltipText ? (
           <sup>
-            <Tooltip title={tooltipText}>
+            <Tooltip title="Aurora City is located in California and was founded in 2025.">
               <Info sx={{ height: "1rem", width: "1rem" }} />
             </Tooltip>
           </sup>

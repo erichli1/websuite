@@ -151,8 +151,6 @@ export const ALL_TESTS: {
       />
     ),
     findbasic: <FindInfoContainer />,
-    findtooltip: (
-      <FindInfoContainer tooltipText="Aurora City is located in California and was founded in 2025." />
-    ),
+    findtooltip: <FindInfoContainer tooltipText />,
   },
 };
