@@ -1,18 +1,33 @@
-import { Stack, Typography } from "@mui/material";
+import { Stack, Tooltip, Typography } from "@mui/material";
 import LoggedTextField from "../components/type/text/LoggedTextField";
+import { Info } from "@mui/icons-material";
 
-export function FindBasic() {
+export type FindInfoContainerProps = {
+  tooltipText?: string;
+};
+
+export function FindInfoContainer({ tooltipText }: FindInfoContainerProps) {
   return (
     <Stack maxWidth="md" sx={{ marginX: "auto", padding: "1rem" }} spacing={2}>
       <Typography variant="h3">AGI Research Lab</Typography>
       <Typography variant="body1">
         AGI Research Lab is a fictional multinational technology company
-        headquartered in Aurora City, founded in 2032 by a group of innovators
-        and scientists dedicated to advancing the field of artificial general
-        intelligence (AGI). The company specializes in developing AGI systems
-        that can perform any intellectual task that a human being can. AGI
-        Research Lab aims to create AI that can reason, solve problems, and
-        understand emotions at a human level.
+        headquartered in Aurora City
+        {tooltipText ? (
+          <sup>
+            <Tooltip title={tooltipText}>
+              <Info sx={{ height: "1rem", width: "1rem" }} />
+            </Tooltip>
+          </sup>
+        ) : (
+          ""
+        )}
+        , founded in 2032 by a group of innovators and scientists dedicated to
+        advancing the field of artificial general intelligence (AGI). The
+        company specializes in developing AGI systems that can perform any
+        intellectual task that a human being can. AGI Research Lab aims to
+        create AI that can reason, solve problems, and understand emotions at a
+        human level.
       </Typography>
       <Typography variant="body1">
         The company&apos;s major breakthrough came in 2035 with the development

@@ -20,7 +20,7 @@ import {
 import { AppBarContainer } from "@/ui/containers/Appbars";
 import DataGridContainer from "@/ui/containers/DataGrids";
 import { NAME_COUNTRY_ORDERDATE_ROWS } from "./data";
-import { FindBasic } from "@/ui/containers/FindInfos";
+import { FindInfoContainer } from "@/ui/containers/FindInfos";
 
 export const ALL_TESTS: {
   [key: string]: {
@@ -150,6 +150,9 @@ export const ALL_TESTS: {
         rows={NAME_COUNTRY_ORDERDATE_ROWS}
       />
     ),
-    findbasic: <FindBasic />,
+    findbasic: <FindInfoContainer />,
+    findtooltip: (
+      <FindInfoContainer tooltipText="Aurora City is located in California and was founded in 2025." />
+    ),
   },
 };
