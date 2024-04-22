@@ -2,8 +2,12 @@
 
 import { FormContainer } from "@/ui/containers/Forms";
 import { Typography } from "@mui/material";
+import { navigateTo } from "../playgroundUtils";
+import { useRouter } from "next/navigation";
 
 export default function Page() {
+  const router = useRouter();
+
   return (
     <>
       <Typography variant="h5">Checkout</Typography>
@@ -14,6 +18,9 @@ export default function Page() {
           ["city", "state", "zipCode"],
         ]}
         submitLabel="Order"
+        onSubmit={() => {
+          navigateTo({ router, url: "/playground/thanks" });
+        }}
       />
     </>
   );

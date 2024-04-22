@@ -21,6 +21,7 @@ type Field =
 export type FormContainerProps = {
   fields: Array<Field | Array<Field>>;
   submitLabel: string;
+  onSubmit?: () => void;
 };
 
 export function FormContainer(props: FormContainerProps) {
@@ -75,7 +76,9 @@ export function FormContainer(props: FormContainerProps) {
         <LoggedButton
           logLabel={props.submitLabel}
           onClick={() => {
-            submit({ input: stringifyJsonSortKeys(formValues) });
+            submit({ input: stringifyJsonSortKeys(formValues) }).then(() => {
+              props.onSubmit?.();
+            });
           }}
           variant="contained"
         />
