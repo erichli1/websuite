@@ -371,6 +371,29 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
             )
         ],
     },
+    "fill": {
+        "basicform": [
+            Test(
+                "Please fill out the form given that my name is John Doe, and my email is johndoe@gmail.com",
+                lambda logs: eval.unordered(
+                    logs,
+                    [
+                        eval.exact_match(
+                            component="type/text", label="First name", newValue="John"
+                        ),
+                        eval.exact_match(
+                            component="type/text", label="Last name", newValue="Doe"
+                        ),
+                        eval.exact_match(
+                            component="type/text",
+                            label="Email",
+                            newValue="johndoe@gmail.com",
+                        ),
+                    ],
+                ),
+            )
+        ]
+    },
 }
 
 

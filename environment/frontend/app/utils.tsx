@@ -27,6 +27,7 @@ import {
   InfoTooltip,
 } from "@/ui/containers/FindInfos";
 import LoggedAccordion from "@/ui/components/click/accordion/LoggedAccordion";
+import { FormContainer } from "@/ui/containers/Forms";
 
 export const ALL_TESTS: {
   [key: string]: {
@@ -166,5 +167,8 @@ export const ALL_TESTS: {
     findtooltip: <InfoTooltip />,
     finddialog: <InfoDialog />,
     findaccordion: <InfoAccordion />,
+  },
+  fill: {
+    basicform: <FormContainer fields={["firstName", "lastName", "email"]} />,
   },
 };

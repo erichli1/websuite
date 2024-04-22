@@ -1,11 +1,14 @@
 import { log } from "@/ui/log";
 import Input, { InputProps } from "@mui/material/Input";
+import OutlinedInput from "@mui/material/OutlinedInput";
+import InputLabel from "@mui/material/InputLabel";
+import FormControl from "@mui/material/FormControl";
 import React from "react";
 import { IMaskInput } from "react-imask";
 
 export type LoggedPhoneInputProps = Omit<
   InputProps,
-  "value" | "inputComponent"
+  "value" | "inputComponent" | "label"
 > & {
   logLabel: string;
   debounceMs?: number;
@@ -61,14 +64,18 @@ export default function LoggedPhoneInput(props: LoggedPhoneInputProps) {
   }, [lastCommittedValue, debounceMs, logLabel, value]);
 
   return (
-    <Input
-      {...restProps}
-      value={value}
-      onChange={(event) => {
-        setValue(event.target.value);
-        props.onChange?.(event);
-      }}
-      inputComponent={TextMaskCustom as any}
-    />
+    <FormControl variant="outlined">
+      <InputLabel>{logLabel}</InputLabel>
+      <OutlinedInput
+        {...restProps}
+        value={value}
+        onChange={(event) => {
+          setValue(event.target.value);
+          props.onChange?.(event);
+        }}
+        inputComponent={TextMaskCustom as any}
+        label={logLabel}
+      />
+    </FormControl>
   );
 }
