@@ -1,11 +1,8 @@
-import { Stack } from "@mui/material";
+import { Box, Stack } from "@mui/material";
 import LoggedTextField from "../components/type/text/LoggedTextField";
 import LoggedPhoneInput from "../components/type/phone/LoggedPhoneInput";
 import LoggedSelect from "../components/select/select/LoggedSelect";
 import LoggedDatePicker from "../components/type/date/LoggedDatePicker";
-
-// TODO: add more fields
-// TODO: support fields being stored in a grid format (eg: Field | Array<Field>)
 
 type Field =
   | "firstName"
@@ -19,15 +16,30 @@ type Field =
   | "birthday";
 
 export type FormContainerProps = {
-  fields: Array<Field>;
+  fields: Array<Field | Array<Field>>;
 };
 
 export function FormContainer(props: FormContainerProps) {
   return (
     <Stack maxWidth="md" sx={{ marginX: "auto", padding: "1rem" }} spacing={2}>
-      {props.fields.map((field, index) => (
-        <MetaFormComponent field={field} key={`form-container-${index}`} />
-      ))}
+      {props.fields.map((field, index) =>
+        Array.isArray(field) ? (
+          <Stack
+            direction="row"
+            spacing={2}
+            useFlexGap
+            key={`form-container-${index}`}
+          >
+            {field.map((subField, subIndex) => (
+              <Box key={`form-container-${index}-${subIndex}`} flexGrow={1}>
+                <MetaFormComponent field={subField} />
+              </Box>
+            ))}
+          </Stack>
+        ) : (
+          <MetaFormComponent field={field} key={`form-container-${index}`} />
+        )
+      )}
     </Stack>
   );
 }
@@ -35,21 +47,21 @@ export function FormContainer(props: FormContainerProps) {
 function MetaFormComponent({ field }: { field: Field }) {
   switch (field) {
     case "firstName":
-      return <LoggedTextField logLabel="First name" />;
+      return <LoggedTextField logLabel="First name" fullWidth />;
     case "lastName":
-      return <LoggedTextField logLabel="Last name" />;
+      return <LoggedTextField logLabel="Last name" fullWidth />;
     case "phoneNumber":
-      return <LoggedPhoneInput logLabel="Phone number" />;
+      return <LoggedPhoneInput logLabel="Phone number" fullWidth />;
     case "email":
-      return <LoggedTextField logLabel="Email" />;
+      return <LoggedTextField logLabel="Email" fullWidth />;
     case "streetAddress":
-      return <LoggedTextField logLabel="Street address" />;
+      return <LoggedTextField logLabel="Street address" fullWidth />;
     case "city":
-      return <LoggedTextField logLabel="City" />;
+      return <LoggedTextField logLabel="City" fullWidth />;
     case "state":
       return <SelectState />;
     case "zipCode":
-      return <LoggedTextField logLabel="Zip code" />;
+      return <LoggedTextField logLabel="Zip code" fullWidth />;
     case "birthday":
       return <LoggedDatePicker logLabel="Birthday" />;
     default:
@@ -114,6 +126,7 @@ function SelectState() {
         { label: "WI" },
         { label: "WY" },
       ]}
+      fullWidth
     />
   );
 }
