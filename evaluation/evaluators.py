@@ -17,6 +17,10 @@ LogEvaluator: TypeAlias = Callable[[Log], bool]
 
 class Eval:
     @staticmethod
+    def check_one(log: Log, evaluators: list[LogEvaluator]) -> bool:
+        return all(evaluator(log) for evaluator in evaluators)
+
+    @staticmethod
     def no_logs(logs: list[Log]) -> bool:
         return len(logs) == 0
 

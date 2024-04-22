@@ -21,3 +21,19 @@ export function log({
     }),
   });
 }
+
+export function submit({ input }: { input: string }) {
+  fetch("/log", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      log: `SUBMIT // ${input}`,
+    }),
+  });
+}
+
+export function stringifyJsonSortKeys(obj: any) {
+  return JSON.stringify(obj, Object.keys(obj).sort());
+}

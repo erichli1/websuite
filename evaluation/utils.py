@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, TypedDict
 
 
 def flatten(input: list[list[Any]]) -> list[Any]:
@@ -9,7 +9,12 @@ def get_url(localhost_port: str, task: str, test: str):
     return f"localhost:{localhost_port}/ind/{task}?test={test}"
 
 
-def get_evals_dict(filename: str) -> dict[str, list[str]]:
+class TestSpecificEvalDict(TypedDict):
+    logs: list[str]
+    submit: str
+
+
+def get_evals_dict(filename: str) -> dict[str, TestSpecificEvalDict]:
     lines = ""
     with open(filename, "r") as file:
         lines = file.readlines()
@@ -17,7 +22,8 @@ def get_evals_dict(filename: str) -> dict[str, list[str]]:
     eval_dict = {}
     collecting = False
     current_key = None
-    current_values = []
+    current_logs = []
+    submit = None
 
     for line in lines:
         line = line.strip()
@@ -26,11 +32,15 @@ def get_evals_dict(filename: str) -> dict[str, list[str]]:
             current_key = line.split(":")[1].strip()
         elif line.startswith("TEST FINISH"):
             if current_key:
-                eval_dict[current_key] = current_values
+                eval_dict[current_key] = {"logs": current_logs, "submit": submit}
             collecting = False
             current_key = None
-            current_values = []
+            current_logs = []
+            submit = None
         elif collecting:
-            current_values.append(line)
+            if line.startswith("SUBMIT"):
+                submit = line
+            else:
+                current_logs.append(line)
 
     return eval_dict

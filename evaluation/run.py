@@ -24,12 +24,14 @@ class Test:
         name: str = None,
         max_lines: int | None = None,
         max_time: int | None = None,
+        submit_eval: Callable[[str], bool] | None = None,
     ):
         self.goal = goal
         self.eval = eval
         self.name = "default" if name is None else name
         self.max_lines = max_lines
         self.max_time = MAX_AGENT_TIME if max_time is None else max_time
+        self.submit_eval = submit_eval
 
     def eval(self, response: list[str]) -> bool:
         return self.eval(response)
@@ -375,7 +377,7 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
     "fill": {
         "basicform": [
             Test(
-                "Please fill out the form given that my name is John Doe, and my email is johndoe@gmail.com",
+                "Please submit the form given that my name is John Doe, and my email is johndoe@gmail.com",
                 lambda logs: eval.unordered(
                     logs,
                     [
@@ -390,13 +392,22 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
                             label="Email",
                             newValue="johndoe@gmail.com",
                         ),
+                        eval.exact_match(component="click/button", label="Submit"),
+                    ],
+                ),
+                submit_eval=lambda log: eval.check_one(
+                    log,
+                    [
+                        eval.exact_match(
+                            label='{"email":"johndoe@gmail.com","firstName":"John","lastName":"Doe"}'
+                        )
                     ],
                 ),
             )
         ],
         "complexform": [
             Test(
-                "Please fill out the form given this information from my ID. John Doe. johndoe@gmail.com. (617) 000-0000. 123 Main St. Cambridge, MA 02138. Born 1/1/2000.",
+                "Please submit the form given this information from my ID. John Doe. johndoe@gmail.com. (617) 000-0000. 123 Main St. Cambridge, MA 02138. Born 1/1/2000.",
                 lambda logs: eval.unordered(
                     logs,
                     [
@@ -413,7 +424,7 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
                         ),
                         eval.exact_match(
                             component="type/phone",
-                            label="Phone",
+                            label="Phone number",
                             newValue="(617) 000-0000",
                         ),
                         eval.exact_match(
@@ -436,9 +447,18 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
                                 eval.contains_match(newValue="01 Jan 2000"),
                             ]
                         ),
+                        eval.exact_match(component="click/button", label="Submit"),
                     ],
                 ),
                 max_time=60,
+                submit_eval=lambda log: eval.check_one(
+                    log,
+                    [
+                        eval.exact_match(
+                            label='{"birthday":"Sat, 01 Jan 2000 05:00:00 GMT","city":"Cambridge","email":"johndoe@gmail.com","firstName":"John","lastName":"Doe","phoneNumber":"(617) 000-0000","state":"MA","streetAddress":"123 Main St","zipCode":"02138"}'
+                        )
+                    ],
+                ),
             )
         ],
     },
@@ -454,14 +474,14 @@ def get_specific_test_and_metadata(task: str, test: str, name: str):
         print(f"ERROR: unable to find task {task}")
         return None
 
-    test_obj = task_dict.get(test)
-    if test_obj is None:
+    tests_obj = task_dict.get(test)
+    if tests_obj is None:
         print(f"ERROR: unable to find test {task}/{test}")
         return None
 
-    for test in test_obj:
-        if test.name == name:
-            return (test, (task, test))
+    for test_obj in tests_obj:
+        if test_obj.name == name:
+            return (test_obj, (task, test))
 
     print(f"ERROR: unable to find test {task}/{test}/{name}")
     return None
@@ -592,6 +612,15 @@ if __name__ == "__main__":
     # Evaluate the log file
     eval_dict = get_evals_dict(PARENT_FOLDER + "trajectories/log.txt")
     for key, items in eval_dict.items():
-        logs = [Log(item) for item in items]
+        logs = [Log(item) for item in items["logs"]]
         test, metadata = get_specific_test_and_metadata(*re.split(r"[ /]", key))
-        print(f"{key}: {test.eval(logs)}")
+        if test.submit_eval is not None:
+            submit_eval_result = (
+                test.submit_eval(Log(items["submit"]))
+                if items["submit"] is not None
+                else False
+            )
+
+            print(f"{key}: process:{test.eval(logs)} submit:{submit_eval_result}")
+        else:
+            print(f"{key}: {test.eval(logs)}")
