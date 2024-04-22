@@ -45,7 +45,7 @@ export const ALL_TESTS: {
       />
     ),
     iconbutton: <LoggedIconButton logLabel="Delete" icon={<Delete />} />,
-    link: <LoggedLink logLabel="Settings" href="#" />,
+    link: <LoggedLink logLabel="Settings" />,
     slider: <LoggedSlider logLabel="Volume" defaultValue={30} />,
     snackbar: <LoggedSnackbar logLabel="Message sent" />,
     switch: <LoggedSwitch logLabel="Do not disturb" defaultChecked={false} />,
