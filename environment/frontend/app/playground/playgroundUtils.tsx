@@ -9,8 +9,9 @@ export function navigateTo({
   router: AppRouterInstance;
   url: string;
 }) {
-  navigate({ url });
-  router.push(url);
+  navigate({ url }).then(() => {
+    router.push(url);
+  });
 }
 
 export function searchProducts(keywords: string | null) {

@@ -35,9 +35,10 @@ export default function LoggedSlider(props: LoggedSliderProps) {
             label: logLabel,
             newVal: newValue.toString(),
             oldVal: lastCommittedValue.toString(),
+          }).then(() => {
+            setLastCommittedValue(newValue as number);
+            props.onChangeCommitted?.(event, newValue);
           });
-          setLastCommittedValue(newValue as number);
-          props.onChangeCommitted?.(event, newValue);
         }}
       />
     </Box>

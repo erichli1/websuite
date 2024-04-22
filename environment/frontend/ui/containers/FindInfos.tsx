@@ -10,7 +10,7 @@ import {
   Typography,
 } from "@mui/material";
 import LoggedTextField from "../components/type/text/LoggedTextField";
-import { ExpandMore, Info } from "@mui/icons-material";
+import { Info } from "@mui/icons-material";
 import LoggedButton from "../components/click/button/LoggedButton";
 import React from "react";
 import LoggedAccordion from "../components/click/accordion/LoggedAccordion";

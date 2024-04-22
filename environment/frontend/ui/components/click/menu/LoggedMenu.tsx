@@ -33,9 +33,10 @@ export default function LoggedMenu(props: LoggedMenuProps) {
               log({
                 component: "click/menu",
                 label: logLabel,
+              }).then(() => {
+                menuItem.onClick?.(event);
+                handleClose();
               });
-              menuItem.onClick?.(event);
-              handleClose();
             }}
           >
             {logLabel}

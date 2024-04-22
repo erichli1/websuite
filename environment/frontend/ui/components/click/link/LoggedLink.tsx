@@ -12,9 +12,10 @@ export default function LoggedLink(props: LoggedLinkProps) {
     <Link
       {...restProps}
       onClick={(event) => {
-        log({ component: "click/link", label: logLabel });
-        navigate({ url: props.href ?? "" });
-        props.onClick?.(event);
+        log({ component: "click/link", label: logLabel }).then(() => {
+          props.onClick?.(event);
+          navigate({ url: props.href ?? "" });
+        });
       }}
     >
       {logLabel}

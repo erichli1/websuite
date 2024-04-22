@@ -23,8 +23,9 @@ export default function LoggedSwitch(props: LoggedSwitchProps) {
               label: logLabel,
               newVal: newChecked ? "true" : "false",
               oldVal: checked ? "true" : "false",
+            }).then(() => {
+              props.onChange?.(event, checked);
             });
-            props.onChange?.(event, checked);
           }}
         />
       }

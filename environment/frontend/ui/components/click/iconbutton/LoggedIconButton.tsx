@@ -14,8 +14,9 @@ export default function LoggedIconButton(props: LoggedIconButtonProps) {
     <IconButton
       {...restProps}
       onClick={(event) => {
-        log({ component: "click/iconbutton", label: logLabel });
-        props.onClick?.(event);
+        log({ component: "click/iconbutton", label: logLabel }).then(() => {
+          props.onClick?.(event);
+        });
       }}
     >
       {icon}

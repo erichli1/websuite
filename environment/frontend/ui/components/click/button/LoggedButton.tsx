@@ -12,8 +12,9 @@ export default function LoggedButton(props: LoggedButtonProps) {
     <Button
       {...restProps}
       onClick={(event) => {
-        log({ component: "click/button", label: logLabel });
-        props.onClick?.(event);
+        log({ component: "click/button", label: logLabel }).then(() => {
+          props.onClick?.(event);
+        });
       }}
     >
       {logLabel}

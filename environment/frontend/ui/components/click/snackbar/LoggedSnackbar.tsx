@@ -41,12 +41,13 @@ export default function LoggedSnackbar(props: LoggedSnackbarProps) {
           aria-label="close"
           color="inherit"
           onClick={(event) => {
-            handleClose(event);
             log({
               component: "click/snackbar",
               label: logLabel,
               newVal: "closed",
               oldVal: "open",
+            }).then(() => {
+              handleClose(event);
             });
           }}
         >

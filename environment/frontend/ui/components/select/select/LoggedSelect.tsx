@@ -29,9 +29,10 @@ export default function LoggedSelect(props: LoggedSelectProps) {
             label: logLabel,
             newVal: event.target.value as string,
             oldVal: value,
+          }).then(() => {
+            setValue(event.target.value as string);
+            props.onChange?.(event, child);
           });
-          setValue(event.target.value as string);
-          props.onChange?.(event, child);
         }}
       >
         {menuItems.map(({ label, ...restMenuItemProps }, index) => (

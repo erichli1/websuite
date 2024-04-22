@@ -24,9 +24,10 @@ export default function LoggedCheckbox(props: LoggedCheckboxProps) {
               label: logLabel,
               newVal: newChecked ? "true" : "false",
               oldVal: checked ? "true" : "false",
+            }).then(() => {
+              setChecked(newChecked);
+              props.onChange?.(event, checked);
             });
-            setChecked(newChecked);
-            props.onChange?.(event, checked);
           }}
         />
       }

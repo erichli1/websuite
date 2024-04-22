@@ -1,4 +1,4 @@
-export function log({
+export async function log({
   component,
   label,
   newVal,
@@ -9,7 +9,7 @@ export function log({
   newVal?: string;
   oldVal?: string;
 }) {
-  fetch("/log", {
+  await fetch("/log", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -22,8 +22,8 @@ export function log({
   });
 }
 
-export function submit({ input }: { input: string }) {
-  fetch("/log", {
+export async function submit({ input }: { input: string }) {
+  await fetch("/log", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -38,8 +38,8 @@ export function stringifyJsonSortKeys(obj: any) {
   return JSON.stringify(obj, Object.keys(obj).sort());
 }
 
-export function navigate({ url }: { url: string }) {
-  fetch("/log", {
+export async function navigate({ url }: { url: string }) {
+  await fetch("/log", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

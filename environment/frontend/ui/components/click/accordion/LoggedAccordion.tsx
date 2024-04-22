@@ -34,9 +34,10 @@ export default function LoggedAccordion(props: LoggedAccordionProps) {
           label: logLabel,
           newVal: newExpanded ? "open" : "closed",
           oldVal: expanded ? "open" : "closed",
+        }).then(() => {
+          setExpanded(newExpanded);
+          restProps.onChange?.(event, newExpanded);
         });
-        setExpanded(newExpanded);
-        restProps.onChange?.(event, newExpanded);
       }}
     >
       <AccordionSummary {...summaryProps} expandIcon={<ExpandMoreIcon />}>

@@ -49,9 +49,10 @@ export default function LoggedConfirmButton(props: LoggedDialogButtonProps) {
               log({
                 component: "click/confirmbutton",
                 label: logLabel,
+              }).then(() => {
+                confirm.onClick?.(event);
+                handleClose();
               });
-              confirm.onClick?.(event);
-              handleClose();
             }}
           >
             {confirmLabel}
