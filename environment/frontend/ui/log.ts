@@ -37,3 +37,15 @@ export function submit({ input }: { input: string }) {
 export function stringifyJsonSortKeys(obj: any) {
   return JSON.stringify(obj, Object.keys(obj).sort());
 }
+
+export function navigate({ url }: { url: string }) {
+  fetch("/log", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      log: `NAVIGATE // ${url}`,
+    }),
+  });
+}

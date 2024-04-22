@@ -169,7 +169,12 @@ export const ALL_TESTS: {
     findaccordion: <InfoAccordion />,
   },
   fill: {
-    basicform: <FormContainer fields={[["firstName", "lastName"], "email"]} />,
+    basicform: (
+      <FormContainer
+        fields={[["firstName", "lastName"], "email"]}
+        submitLabel="submit"
+      />
+    ),
     complexform: (
       <FormContainer
         fields={[
@@ -180,6 +185,7 @@ export const ALL_TESTS: {
           ["city", "state", "zipCode"],
           "birthday",
         ]}
+        submitLabel="submit"
       />
     ),
   },

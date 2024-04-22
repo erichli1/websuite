@@ -20,6 +20,7 @@ type Field =
 
 export type FormContainerProps = {
   fields: Array<Field | Array<Field>>;
+  submitLabel: string;
 };
 
 export function FormContainer(props: FormContainerProps) {
@@ -44,7 +45,7 @@ export function FormContainer(props: FormContainerProps) {
   }, [props.fields]);
 
   return (
-    <Stack maxWidth="md" sx={{ marginX: "auto", padding: "1rem" }} spacing={2}>
+    <Stack maxWidth="md" sx={{ marginX: "auto" }} spacing={2}>
       {props.fields.map((field, index) =>
         Array.isArray(field) ? (
           <Stack
@@ -72,7 +73,7 @@ export function FormContainer(props: FormContainerProps) {
       )}
       <div>
         <LoggedButton
-          logLabel="Submit"
+          logLabel={props.submitLabel}
           onClick={() => {
             submit({ input: stringifyJsonSortKeys(formValues) });
           }}

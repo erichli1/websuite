@@ -1,4 +1,4 @@
-import { log } from "@/ui/log";
+import { log, navigate } from "@/ui/log";
 import Link, { LinkProps } from "@mui/material/Link";
 
 export type LoggedLinkProps = LinkProps & {
@@ -13,6 +13,7 @@ export default function LoggedLink(props: LoggedLinkProps) {
       {...restProps}
       onClick={(event) => {
         log({ component: "click/link", label: logLabel });
+        navigate({ url: props.href ?? "" });
         props.onClick?.(event);
       }}
     >

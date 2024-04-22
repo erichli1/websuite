@@ -32,6 +32,11 @@ export default function Home() {
             href={`/ind/${task}?test=${test}`}
           >{`${task}/${test}`}</Link>
         ))}
+
+        <Typography>
+          To explore the playground, please navigate to /playground
+        </Typography>
+        <Link href="playground">/playground</Link>
       </Stack>
     </main>
   );

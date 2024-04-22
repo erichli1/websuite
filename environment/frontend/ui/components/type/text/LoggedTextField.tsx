@@ -5,10 +5,11 @@ import React from "react";
 export type LoggedTextFieldProps = Omit<TextFieldProps, "label" | "value"> & {
   logLabel: string;
   debounceMs?: number;
+  hideLabel?: boolean;
 };
 
 export default function LoggedTextField(props: LoggedTextFieldProps) {
-  const { logLabel, debounceMs, defaultValue, ...restProps } = props;
+  const { logLabel, hideLabel, debounceMs, defaultValue, ...restProps } = props;
 
   const [value, setValue] = React.useState<string>(
     defaultValue !== undefined ? (defaultValue as string) : ""
@@ -37,7 +38,7 @@ export default function LoggedTextField(props: LoggedTextFieldProps) {
     <TextField
       {...restProps}
       value={value}
-      label={logLabel}
+      label={hideLabel ? undefined : logLabel}
       onChange={(event) => {
         setValue(event.target.value);
         props.onChange?.(event);
