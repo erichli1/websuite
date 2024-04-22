@@ -170,5 +170,20 @@ export const ALL_TESTS: {
   },
   fill: {
     basicform: <FormContainer fields={["firstName", "lastName", "email"]} />,
+    complexform: (
+      <FormContainer
+        fields={[
+          "firstName",
+          "lastName",
+          "email",
+          "phoneNumber",
+          "streetAddress",
+          "city",
+          "state",
+          "zipCode",
+          "birthday",
+        ]}
+      />
+    ),
   },
 };

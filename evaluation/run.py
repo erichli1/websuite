@@ -11,6 +11,10 @@ import time
 
 ## HELPFUL TYPES AND CONSTANTS
 
+PARENT_FOLDER = os.path.join(os.path.dirname(__file__), "../")
+LOCALHOST_PORT = 3000  # needs to be in sync with /environment/frontend/package.json
+MAX_AGENT_TIME = 30  # seconds
+
 
 class Test:
     def __init__(
@@ -19,22 +23,19 @@ class Test:
         eval: Callable[[list[str]], bool],
         name: str = None,
         max_lines: int | None = None,
+        max_time: int | None = None,
     ):
         self.goal = goal
         self.eval = eval
         self.name = "default" if name is None else name
         self.max_lines = max_lines
+        self.max_time = MAX_AGENT_TIME if max_time is None else max_time
 
     def eval(self, response: list[str]) -> bool:
         return self.eval(response)
 
 
 TestsAndMetadata: TypeAlias = tuple[list[Test], tuple[str, str]]
-
-
-PARENT_FOLDER = os.path.join(os.path.dirname(__file__), "../")
-LOCALHOST_PORT = 3000  # needs to be in sync with /environment/frontend/package.json
-MAX_AGENT_TIME = 30  # seconds
 
 
 ind_tests: Dict[str, Dict[str, list[Test]]] = {
@@ -392,7 +393,54 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
                     ],
                 ),
             )
-        ]
+        ],
+        "complexform": [
+            Test(
+                "Please fill out the form given this information from my ID. John Doe. johndoe@gmail.com. (617) 000-0000. 123 Main St. Cambridge, MA 02138. Born 1/1/2000.",
+                lambda logs: eval.unordered(
+                    logs,
+                    [
+                        eval.exact_match(
+                            component="type/text", label="First name", newValue="John"
+                        ),
+                        eval.exact_match(
+                            component="type/text", label="Last name", newValue="Doe"
+                        ),
+                        eval.exact_match(
+                            component="type/text",
+                            label="Email",
+                            newValue="johndoe@gmail.com",
+                        ),
+                        eval.exact_match(
+                            component="type/phone",
+                            label="Phone",
+                            newValue="(617) 000-0000",
+                        ),
+                        eval.exact_match(
+                            component="type/text",
+                            label="Street address",
+                            newValue="123 Main St",
+                        ),
+                        eval.exact_match(
+                            component="type/text", label="City", newValue="Cambridge"
+                        ),
+                        eval.exact_match(
+                            component="select/select", label="State", newValue="MA"
+                        ),
+                        eval.exact_match(
+                            component="type/text", label="Zip code", newValue="02138"
+                        ),
+                        eval.all_log(
+                            [
+                                eval.exact_match(component="type/date"),
+                                eval.contains_match(newValue="01 Jan 2000"),
+                            ]
+                        ),
+                    ],
+                ),
+                max_time=60,
+            )
+        ],
     },
 }
 
@@ -534,7 +582,7 @@ if __name__ == "__main__":
                     goal=test.goal,
                     url=get_url(LOCALHOST_PORT, *metadata),
                     existing_lines=existing_lines,
-                    timeout=MAX_AGENT_TIME,
+                    timeout=test.max_time,
                     addl_lines=test.max_lines,
                 )
 
