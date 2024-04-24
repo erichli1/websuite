@@ -2,12 +2,13 @@ import os
 from typing import Literal
 
 from evaluation.utils import generate_checkpoints_from_logs
+from evaluation.evaluators import Log, golden_matches_processed
 
 PARENT_FOLDER = os.path.join(os.path.dirname(__file__), "../")
 
 
 class PlaygroundCheckpoint:
-    def __init__(self, url: str, logs: list[str], name: str | None = None):
+    def __init__(self, url: str, logs: list[Log], name: str | None = None):
         self.url = url
         self.logs = logs
         self.name = name
@@ -19,41 +20,51 @@ class PlaygroundTest:
         self.checkpoints = checkpoints
 
 
+def logs_list_str_to_list_logs(logs: list[str]) -> list[Log]:
+    return [Log(log) for log in logs]
+
+
 playground_tests: dict[str, PlaygroundTest] = {
     "order": PlaygroundTest(
         goal="Please order a laptop to be delivered to John Doe at 123 Main Street, Cambridge, MA 02138",
         checkpoints=[
             PlaygroundCheckpoint(
                 "/playground",
-                [
-                    "type/text // Search items // laptop // ",
-                    "click/iconbutton // Search",
-                ],
+                logs_list_str_to_list_logs(
+                    [
+                        "type/text // Search items // laptop",
+                        "click/iconbutton // Search",
+                    ]
+                ),
                 "home",
             ),
             PlaygroundCheckpoint(
                 "/playground/search?query=laptop",
-                [
-                    'click/link // OTVOC Laptop 16 inch Windows 11 Pro, VocBook 16, Intel 12th Gen N95, Up to 3.4GHz, 16GB DDR5 RAM, 1TB PCIE NVME SSD, 16" FHD IPS 1920x1200, 2.0MP, 2.4G+5G WiFi, BT 5.0, HDMI, RJ45, Type C, Gray'
-                ],
+                logs_list_str_to_list_logs(
+                    [
+                        'click/link // OTVOC Laptop 16 inch Windows 11 Pro, VocBook 16, Intel 12th Gen N95, Up to 3.4GHz, 16GB DDR5 RAM, 1TB PCIE NVME SSD, 16" FHD IPS 1920x1200, 2.0MP, 2.4G+5G WiFi, BT 5.0, HDMI, RJ45, Type C, Gray'
+                    ]
+                ),
                 "search",
             ),
             PlaygroundCheckpoint(
                 "/playground/product/2",
-                ["click/button // Buy now"],
+                logs_list_str_to_list_logs(["click/button // Buy now"]),
                 "item_page",
             ),
             PlaygroundCheckpoint(
                 "/playground/checkout",
-                [
-                    "type/text // First name // John //",
-                    "type/text // Last name // Doe //",
-                    "type/text // Street address // 123 Main St //",
-                    "type/text // City // Cambridge //",
-                    "select/select // State // MA //",
-                    "type/text // Zip code // 02138 //",
-                    "click/button // Order",
-                ],
+                logs_list_str_to_list_logs(
+                    [
+                        "type/text // First name // John",
+                        "type/text // Last name // Doe",
+                        "type/text // Street address // 123 Main St",
+                        "type/text // City // Cambridge",
+                        "select/select // State // MA",
+                        "type/text // Zip code // 02138",
+                        "click/button // Order",
+                    ]
+                ),
                 "buy",
             ),
             PlaygroundCheckpoint(
@@ -150,11 +161,13 @@ def compare_processed_and_golden_checkpoints(
             processed_logs_index = 0
 
             while True:
+                # if both log indexes are out of bounds, we are done
                 if golden_logs_index >= len(
                     golden_logs
                 ) and processed_logs_index >= len(processed_logs):
                     break
 
+                # if golden_logs out of bound but not procesed_logs, then mark rest of processed_logs as extra
                 if golden_logs_index >= len(golden_logs):
                     for processed_logs_index in range(
                         processed_logs_index, len(processed_logs)
@@ -164,28 +177,42 @@ def compare_processed_and_golden_checkpoints(
                         )
                     break
 
+                # if processed_logs out of bound but not golden_logs, then mark rest of golden_logs as missing
                 if processed_logs_index >= len(processed_logs):
                     for golden_logs_index in range(golden_logs_index, len(golden_logs)):
                         missing_logs.append(golden_logs[golden_logs_index])
                     break
 
-                if (
-                    golden_logs[golden_logs_index].strip()
-                    == processed_logs[processed_logs_index].strip()
+                # if both are in bounds, we compare the logs
+                if golden_matches_processed(
+                    golden_logs[golden_logs_index], processed_logs[processed_logs_index]
                 ):
                     correct_logs.append(golden_logs[golden_logs_index])
                     golden_logs_index += 1
                     processed_logs_index += 1
                 else:
                     future_processed_logs = [
-                        processed_logs[i].strip()
+                        processed_logs[i]
                         for i in range(processed_logs_index, len(processed_logs))
                     ]
 
-                    if golden_logs[golden_logs_index].strip() in future_processed_logs:
-                        i_index = future_processed_logs.index(
-                            golden_logs[golden_logs_index]
-                        )
+                    if any(
+                        [
+                            golden_matches_processed(
+                                golden_logs[golden_logs_index], log
+                            )
+                            for log in future_processed_logs
+                        ]
+                    ):
+                        indices = [
+                            index
+                            for index, log in enumerate(future_processed_logs)
+                            if golden_matches_processed(
+                                golden_logs[golden_logs_index], log
+                            )
+                        ]
+                        i_index = indices[0]
+
                         for i in range(
                             processed_logs_index, processed_logs_index + i_index
                         ):
@@ -260,7 +287,10 @@ if __name__ == "__main__":
             processed_checkpoints = []
             for checkpoint in checkpoints:
                 processed_checkpoints.append(
-                    PlaygroundCheckpoint(checkpoint["url"], checkpoint["logs"])
+                    PlaygroundCheckpoint(
+                        checkpoint["url"],
+                        logs_list_str_to_list_logs(checkpoint["logs"]),
+                    )
                 )
 
             evaluated = compare_processed_and_golden_checkpoints(
@@ -277,10 +307,25 @@ if __name__ == "__main__":
                         else evaluated_checkpoint.url
                     )
                 )
-                if evaluated_checkpoint.checkpoint_status == "partial_match":
-                    print("    CORRECT: " + str(evaluated_checkpoint.correct_logs))
-                    print("    MISSING: " + str(evaluated_checkpoint.missing_logs))
+                if (
+                    evaluated_checkpoint.checkpoint_status == "partial_match"
+                    or evaluated_checkpoint.checkpoint_status == "extra_in_logs"
+                ):
                     print(
-                        "    EXTRA: " + str(evaluated_checkpoint.extra_logs_processed)
+                        "    CORRECT: "
+                        + str([str(log) for log in evaluated_checkpoint.correct_logs])
+                    )
+                    print(
+                        "    MISSING: "
+                        + str([str(log) for log in evaluated_checkpoint.missing_logs])
+                    )
+                    print(
+                        "    EXTRA: "
+                        + str(
+                            [
+                                str(log)
+                                for log in evaluated_checkpoint.extra_logs_processed
+                            ]
+                        )
                     )
                 print()
