@@ -44,3 +44,54 @@ def get_evals_dict(filename: str) -> dict[str, TestSpecificEvalDict]:
                 current_logs.append(line)
 
     return eval_dict
+
+
+def generate_checkpoints_from_logs(filename: str) -> dict[str, list]:
+    lines = ""
+    with open(filename, "r") as file:
+        lines = file.readlines()
+
+    full = {}
+
+    checkpoints = []
+    collecting = False
+    current_test = None
+    current_checkpoint = None
+    current_logs = []
+
+    for line in lines:
+        line = line.strip()
+        if line.startswith("TEST BEGIN"):
+            collecting = True
+            current_test = line.split(":")[1].strip()
+        elif line.startswith("NAVIGATE"):
+            # if checkpoint already exists, end it
+            if current_checkpoint:
+                checkpoints.append(
+                    {
+                        "url": current_checkpoint.split("//")[1].strip(),
+                        "logs": current_logs,
+                    }
+                )
+
+            # create new checkpoint
+            current_checkpoint = line
+            current_logs = []
+        elif line.startswith("TEST FINISH"):
+            # if currently logging checkpoint, end it
+            if current_checkpoint:
+                checkpoints.append(
+                    {
+                        "url": current_checkpoint.split("//")[1].strip(),
+                        "logs": current_logs,
+                    }
+                )
+            full[current_test] = checkpoints
+
+            collecting = False
+            current_test = None
+            current_logs = []
+        elif collecting:
+            current_logs.append(line)
+
+    return full

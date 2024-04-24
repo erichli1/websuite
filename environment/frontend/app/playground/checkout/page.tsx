@@ -18,9 +18,13 @@ export default function Page() {
           ["city", "state", "zipCode"],
         ]}
         submitLabel="Order"
-        onSubmit={() => {
-          navigateTo({ router, url: "/playground/thanks" });
+        onSubmit={(formValuesString) => {
+          navigateTo({
+            router,
+            url: `/playground/thanks?submitted=${formValuesString}`,
+          });
         }}
+        dontLogSubmit
       />
     </>
   );
