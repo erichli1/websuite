@@ -566,7 +566,7 @@ if __name__ == "__main__":
     tests_and_metadatas = []
     if len(sys.argv) > 1:
         for i, arg in enumerate(sys.argv[1:]):
-            if arg == "evaluate_logs":
+            if arg == "-evalonly":
                 skip_to_evaluate = True
                 break
 

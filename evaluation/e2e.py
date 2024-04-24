@@ -312,47 +312,77 @@ def compare_processed_and_golden_checkpoints(
 
 
 if __name__ == "__main__":
+    tests = []
     skip_to_evaluate = False
-    test = None
 
     if len(sys.argv) > 1:
         for i, arg in enumerate(sys.argv[1:]):
-            if arg == "evaluate_logs":
+            if arg == "-evalonly":
                 skip_to_evaluate = True
                 break
 
-            if arg in playground_tests:
-                test = arg
-                break
+            parts = arg.split("/", 1)
+
+            if parts[0] in playground_tests:
+                if len(parts) == 1:
+                    tests.append(
+                        {
+                            "test": parts[0],
+                            "starting_checkpoint": None,
+                            "path": "/playground",
+                        }
+                    )
+                elif len(parts) == 2:
+                    for checkpoint in playground_tests[parts[0]].checkpoints:
+                        if parts[1] == checkpoint.name:
+                            tests.append(
+                                {
+                                    "test": parts[0],
+                                    "starting_checkpoint": parts[1],
+                                    "path": checkpoint.url,
+                                }
+                            )
+                            break
+            else:
+                print(f"ERROR: unable to find test {parts[0]}")
 
     if not skip_to_evaluate:
         with open(PARENT_FOLDER + "trajectories/log.txt", "w") as file:
             pass
 
-        with open(PARENT_FOLDER + "trajectories/log.txt", "a") as file:
-            file.write(f"TEST BEGIN: playground/{test}\n")
+        for test in tests:
+            with open(PARENT_FOLDER + "trajectories/log.txt", "a") as file:
+                file.write(
+                    f"TEST BEGIN: playground/{test["test"]} {test["starting_checkpoint"] if test["starting_checkpoint"] is not None else ''}\n"
+                )
+                file.write(f"NAVIGATE // {test["path"]}\n")
 
-        existing_lines = 0
-        with open(PARENT_FOLDER + "trajectories/log.txt", "r") as file:
-            existing_lines = len(file.readlines())
+            existing_lines = 0
+            with open(PARENT_FOLDER + "trajectories/log.txt", "r") as file:
+                existing_lines = len(file.readlines())
 
-        run_agent_with_limits(
-            goal=playground_tests[test].goal,
-            url=f"localhost:3000/playground",
-            existing_lines=existing_lines,
-            log_file=PARENT_FOLDER + "trajectories/log.txt",
-            timeout=60,
-            addl_lines=100,
-        )
+            run_agent_with_limits(
+                goal=playground_tests[test["test"]].goal,
+                url="localhost:3000" + test["path"],
+                existing_lines=existing_lines,
+                log_file=PARENT_FOLDER + "trajectories/log.txt",
+                timeout=60,
+                addl_lines=100,
+            )
 
-        with open(PARENT_FOLDER + "trajectories/log.txt", "a") as file:
-            file.write("TEST FINISH\n")
+            with open(PARENT_FOLDER + "trajectories/log.txt", "a") as file:
+                file.write("TEST FINISH\n")
 
     # evaluate the logs that exist
     logs = generate_checkpoints_from_logs(PARENT_FOLDER + "trajectories/log.txt")
     for test, checkpoints in logs.items():
-        test_name = test.split("/")[1].strip()
-        if test_name in playground_tests:
+        test_and_checkpoint = test.split("/")[1].strip().split(" ")
+
+        curr_test_name = test_and_checkpoint[0]
+        curr_starting_checkpoint = (
+            test_and_checkpoint[1] if len(test_and_checkpoint) > 1 else None
+        )
+        if curr_test_name in playground_tests:
             processed_checkpoints = []
             for checkpoint in checkpoints:
                 processed_checkpoints.append(
@@ -362,8 +392,17 @@ if __name__ == "__main__":
                     )
                 )
 
+            golden_checkpoints = playground_tests[curr_test_name].checkpoints
+            if curr_starting_checkpoint is not None:
+                indices = [
+                    index
+                    for index, checkpoint in enumerate(golden_checkpoints)
+                    if checkpoint.name == curr_starting_checkpoint
+                ]
+                golden_checkpoints = golden_checkpoints[indices[0] :]
+
             evaluated = compare_processed_and_golden_checkpoints(
-                playground_tests[test_name].checkpoints, processed_checkpoints
+                golden_checkpoints, processed_checkpoints
             )
 
             for evaluated_checkpoint in evaluated:
