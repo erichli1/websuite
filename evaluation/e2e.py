@@ -9,10 +9,17 @@ PARENT_FOLDER = os.path.join(os.path.dirname(__file__), "../")
 
 
 class PlaygroundCheckpoint:
-    def __init__(self, url: str, logs: list[Log], name: str | None = None):
+    def __init__(
+        self,
+        url: str,
+        logs: list[Log],
+        name: str | None = None,
+        orderless_logs: bool = False,
+    ):
         self.url = url
         self.logs = logs
         self.name = name
+        self.orderless_logs = orderless_logs
 
 
 class PlaygroundTest:
@@ -67,6 +74,7 @@ playground_tests: dict[str, PlaygroundTest] = {
                     ]
                 ),
                 "buy",
+                orderless_logs=True,
             ),
             PlaygroundCheckpoint(
                 '/playground/thanks?submitted={"city":"Cambridge","firstName":"John","lastName":"Doe","state":"MA","streetAddress":"123 Main St","zipCode":"02138"}',
@@ -158,70 +166,93 @@ def compare_processed_and_golden_checkpoints(
             golden_logs = golden_checkpoints[golden_index].logs
             processed_logs = processed_checkpoints[processed_index].logs
 
-            golden_logs_index = 0
-            processed_logs_index = 0
-
-            while True:
-                # if both log indexes are out of bounds, we are done
-                if golden_logs_index >= len(
-                    golden_logs
-                ) and processed_logs_index >= len(processed_logs):
-                    break
-
-                # if golden_logs out of bound but not procesed_logs, then mark rest of processed_logs as extra
-                if golden_logs_index >= len(golden_logs):
-                    for processed_logs_index in range(
-                        processed_logs_index, len(processed_logs)
-                    ):
-                        extra_logs_processed.append(
-                            processed_logs[processed_logs_index]
-                        )
-                    break
-
-                # if processed_logs out of bound but not golden_logs, then mark rest of golden_logs as missing
-                if processed_logs_index >= len(processed_logs):
-                    for golden_logs_index in range(golden_logs_index, len(golden_logs)):
-                        missing_logs.append(golden_logs[golden_logs_index])
-                    break
-
-                # if both are in bounds, we compare the logs
-                if golden_matches_processed(
-                    golden_logs[golden_logs_index], processed_logs[processed_logs_index]
-                ):
-                    correct_logs.append(golden_logs[golden_logs_index])
-                    golden_logs_index += 1
-                    processed_logs_index += 1
-                else:
-                    future_processed_logs = [
-                        processed_logs[i]
-                        for i in range(processed_logs_index, len(processed_logs))
-                    ]
-
+            # basic parsing of logs if order doesn't matter
+            if golden_checkpoints[golden_index].orderless_logs:
+                for golden in golden_logs:
                     if any(
-                        [
-                            golden_matches_processed(
-                                golden_logs[golden_logs_index], log
-                            )
-                            for log in future_processed_logs
-                        ]
+                        golden_matches_processed(golden, processed)
+                        for processed in processed_logs
                     ):
-                        indices = [
-                            index
-                            for index, log in enumerate(future_processed_logs)
-                            if golden_matches_processed(
-                                golden_logs[golden_logs_index], log
-                            )
-                        ]
-                        i_index = indices[0]
-
-                        for i in range(
-                            processed_logs_index, processed_logs_index + i_index
-                        ):
-                            extra_logs_processed.append(processed_logs[i])
-                        processed_logs_index += i_index
+                        correct_logs.append(golden)
                     else:
-                        missing_logs.append(golden_logs[golden_logs_index])
+                        missing_logs.append(golden)
+
+                for processed in processed_logs:
+                    if not any(
+                        golden_matches_processed(golden, processed)
+                        for golden in golden_logs
+                    ):
+                        extra_logs_processed.append(processed)
+
+            # complex parsing of logs if order matches
+            else:
+                golden_logs_index = 0
+                processed_logs_index = 0
+
+                while True:
+                    # if both log indexes are out of bounds, we are done
+                    if golden_logs_index >= len(
+                        golden_logs
+                    ) and processed_logs_index >= len(processed_logs):
+                        break
+
+                    # if golden_logs out of bound but not procesed_logs, then mark rest of processed_logs as extra
+                    if golden_logs_index >= len(golden_logs):
+                        for processed_logs_index in range(
+                            processed_logs_index, len(processed_logs)
+                        ):
+                            extra_logs_processed.append(
+                                processed_logs[processed_logs_index]
+                            )
+                        break
+
+                    # if processed_logs out of bound but not golden_logs, then mark rest of golden_logs as missing
+                    if processed_logs_index >= len(processed_logs):
+                        for golden_logs_index in range(
+                            golden_logs_index, len(golden_logs)
+                        ):
+                            missing_logs.append(golden_logs[golden_logs_index])
+                        break
+
+                    # if both are in bounds, we compare the logs
+                    if golden_matches_processed(
+                        golden_logs[golden_logs_index],
+                        processed_logs[processed_logs_index],
+                    ):
+                        correct_logs.append(golden_logs[golden_logs_index])
                         golden_logs_index += 1
+                        processed_logs_index += 1
+                    else:
+                        future_processed_logs = [
+                            processed_logs[i]
+                            for i in range(processed_logs_index, len(processed_logs))
+                        ]
+
+                        if any(
+                            [
+                                golden_matches_processed(
+                                    golden_logs[golden_logs_index], log
+                                )
+                                for log in future_processed_logs
+                            ]
+                        ):
+                            indices = [
+                                index
+                                for index, log in enumerate(future_processed_logs)
+                                if golden_matches_processed(
+                                    golden_logs[golden_logs_index], log
+                                )
+                            ]
+                            i_index = indices[0]
+
+                            for i in range(
+                                processed_logs_index, processed_logs_index + i_index
+                            ):
+                                extra_logs_processed.append(processed_logs[i])
+                            processed_logs_index += i_index
+                        else:
+                            missing_logs.append(golden_logs[golden_logs_index])
+                            golden_logs_index += 1
 
             full_match = len(correct_logs) == len(golden_logs) == len(processed_logs)
 
