@@ -3,7 +3,7 @@ import sys
 import os
 import re
 from evaluation.evaluators import Eval as eval, Log
-from evaluation.utils import flatten, get_evals_dict, get_url
+from evaluation.utils import flatten, get_evals_dict, get_url, run_agent_with_limits
 import subprocess
 import threading
 import time
@@ -519,42 +519,42 @@ def get_all_tests_and_metadatas() -> list[TestsAndMetadata] | None:
 ## AGENT RUNNING SCAFFOLDING
 
 
-def check_log_file(process, line_threshold: int):
-    while process.poll() is None:
-        with open(PARENT_FOLDER + "trajectories/log.txt", "r") as file:
-            lines = file.readlines()
-            if len(lines) >= line_threshold:
-                process.terminate()
-                print("Process terminated due to excess log entries.")
-                return
-        time.sleep(1)
+# def check_log_file(process, line_threshold: int):
+#     while process.poll() is None:
+#         with open(PARENT_FOLDER + "trajectories/log.txt", "r") as file:
+#             lines = file.readlines()
+#             if len(lines) >= line_threshold:
+#                 process.terminate()
+#                 print("Process terminated due to excess log entries.")
+#                 return
+#         time.sleep(1)
 
 
-def run_with_log_monitoring(command: str, line_threshold: int):
-    process = subprocess.Popen(command, shell=True)
+# def run_with_log_monitoring(command: str, line_threshold: int):
+#     process = subprocess.Popen(command, shell=True)
 
-    # Start thread to monitor the log file
-    log_thread = threading.Thread(target=check_log_file, args=(process, line_threshold))
-    log_thread.start()
+#     # Start thread to monitor the log file
+#     log_thread = threading.Thread(target=check_log_file, args=(process, line_threshold))
+#     log_thread.start()
 
-    process.wait()
-    log_thread.join()
+#     process.wait()
+#     log_thread.join()
 
 
-def run_agent_with_limits(
-    goal: str,
-    url: str,
-    existing_lines: int,
-    timeout: int | None = None,
-    addl_lines: int | None = None,
-):
-    command = f"""python -m evaluation.agent "{goal}" {url} {timeout}"""
-    if addl_lines is not None:
-        print(f"    Running with log line threshold of {addl_lines}")
-        run_with_log_monitoring(command, addl_lines + existing_lines)
-    else:
-        process = subprocess.Popen(command, shell=True)
-        process.wait()
+# def run_agent_with_limits(
+#     goal: str,
+#     url: str,
+#     existing_lines: int,
+#     timeout: int | None = None,
+#     addl_lines: int | None = None,
+# ):
+#     command = f"""python -m evaluation.agent "{goal}" {url} {timeout}"""
+#     if addl_lines is not None:
+#         print(f"    Running with log line threshold of {addl_lines}")
+#         run_with_log_monitoring(command, addl_lines + existing_lines)
+#     else:
+#         process = subprocess.Popen(command, shell=True)
+#         process.wait()
 
 
 ## RUNNING THE EVALUATION
@@ -602,6 +602,7 @@ if __name__ == "__main__":
                     goal=test.goal,
                     url=get_url(LOCALHOST_PORT, *metadata),
                     existing_lines=existing_lines,
+                    log_file=PARENT_FOLDER + "trajectories/log.txt",
                     timeout=test.max_time,
                     addl_lines=test.max_lines,
                 )

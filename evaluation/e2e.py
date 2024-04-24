@@ -1,7 +1,8 @@
 import os
 from typing import Literal
+import sys
 
-from evaluation.utils import generate_checkpoints_from_logs
+from evaluation.utils import generate_checkpoints_from_logs, run_agent_with_limits
 from evaluation.evaluators import Log, golden_matches_processed
 
 PARENT_FOLDER = os.path.join(os.path.dirname(__file__), "../")
@@ -58,7 +59,7 @@ playground_tests: dict[str, PlaygroundTest] = {
                     [
                         "type/text // First name // John",
                         "type/text // Last name // Doe",
-                        "type/text // Street address // 123 Main St",
+                        "type/text // Street address // 123 Main Street",
                         "type/text // City // Cambridge",
                         "select/select // State // MA",
                         "type/text // Zip code // 02138",
@@ -280,6 +281,43 @@ def compare_processed_and_golden_checkpoints(
 
 
 if __name__ == "__main__":
+    skip_to_evaluate = False
+    test = None
+
+    if len(sys.argv) > 1:
+        for i, arg in enumerate(sys.argv[1:]):
+            if arg == "evaluate_logs":
+                skip_to_evaluate = True
+                break
+
+            if arg in playground_tests:
+                test = arg
+                break
+
+    if not skip_to_evaluate:
+        with open(PARENT_FOLDER + "trajectories/log.txt", "w") as file:
+            pass
+
+        with open(PARENT_FOLDER + "trajectories/log.txt", "a") as file:
+            file.write(f"TEST BEGIN: playground/{test}\n")
+
+        existing_lines = 0
+        with open(PARENT_FOLDER + "trajectories/log.txt", "r") as file:
+            existing_lines = len(file.readlines())
+
+        run_agent_with_limits(
+            goal=playground_tests[test].goal,
+            url=f"localhost:3000/playground",
+            existing_lines=existing_lines,
+            log_file=PARENT_FOLDER + "trajectories/log.txt",
+            timeout=60,
+            addl_lines=100,
+        )
+
+        with open(PARENT_FOLDER + "trajectories/log.txt", "a") as file:
+            file.write("TEST FINISH\n")
+
+    # evaluate the logs that exist
     logs = generate_checkpoints_from_logs(PARENT_FOLDER + "trajectories/log.txt")
     for test, checkpoints in logs.items():
         test_name = test.split("/")[1].strip()

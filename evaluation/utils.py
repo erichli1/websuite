@@ -1,4 +1,7 @@
 from typing import Any, TypedDict
+import subprocess
+import threading
+import time
 
 
 def flatten(input: list[list[Any]]) -> list[Any]:
@@ -95,3 +98,44 @@ def generate_checkpoints_from_logs(filename: str) -> dict[str, list]:
             current_logs.append(line)
 
     return full
+
+
+def check_log_file(process, line_threshold: int, log_file: str):
+    while process.poll() is None:
+        with open(log_file, "r") as file:
+            lines = file.readlines()
+            if len(lines) >= line_threshold:
+                process.terminate()
+                print("Process terminated due to excess log entries.")
+                return
+        time.sleep(1)
+
+
+def run_with_log_monitoring(command: str, line_threshold: int, log_file: str):
+    process = subprocess.Popen(command, shell=True)
+
+    # Start thread to monitor the log file
+    log_thread = threading.Thread(
+        target=check_log_file, args=(process, line_threshold, log_file)
+    )
+    log_thread.start()
+
+    process.wait()
+    log_thread.join()
+
+
+def run_agent_with_limits(
+    goal: str,
+    url: str,
+    existing_lines: int,
+    log_file: str,
+    timeout: int | None = None,
+    addl_lines: int | None = None,
+):
+    command = f"""python -m evaluation.agent "{goal}" {url} {timeout}"""
+    if addl_lines is not None:
+        print(f"    Running with log line threshold of {addl_lines}")
+        run_with_log_monitoring(command, addl_lines + existing_lines, log_file)
+    else:
+        process = subprocess.Popen(command, shell=True)
+        process.wait()
