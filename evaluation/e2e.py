@@ -2,7 +2,11 @@ import os
 from typing import Literal
 import sys
 
-from evaluation.utils import generate_checkpoints_from_logs, run_agent_with_limits
+from evaluation.utils import (
+    LOCALHOST_PORT,
+    generate_checkpoints_from_logs,
+    run_agent_with_limits,
+)
 from evaluation.evaluators import Log, golden_matches_processed
 
 PARENT_FOLDER = os.path.join(os.path.dirname(__file__), "../")
@@ -373,7 +377,7 @@ if __name__ == "__main__":
 
             run_agent_with_limits(
                 goal=playground_tests[test["test"]].goal,
-                url="localhost:3000" + test["path"],
+                url=f"localhost:{LOCALHOST_PORT}" + test["path"],
                 existing_lines=existing_lines,
                 log_file=PARENT_FOLDER + "trajectories/log.txt",
                 timeout=60,

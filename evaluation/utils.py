@@ -3,6 +3,8 @@ import subprocess
 import threading
 import time
 
+LOCALHOST_PORT = 3000  # needs to be in sync with /environment/frontend/package.json
+
 
 def flatten(input: list[list[Any]]) -> list[Any]:
     return [item for sublist in input for item in sublist]
