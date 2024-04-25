@@ -316,35 +316,7 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
             )
         ],
     },
-    "info": {
-        "gridfilter": [
-            Test(
-                "Please filter for orders where the country is USA",
-                lambda logs: eval.at_least_one(
-                    logs,
-                    [
-                        eval.exact_match(
-                            component="click/gridfilter",
-                            newValue='[{"field":"country","operator":"equals","value":"USA"}]',
-                        )
-                    ],
-                ),
-            )
-        ],
-        "gridsort": [
-            Test(
-                "Please sort the table by the name column in ascending order",
-                lambda logs: eval.ordered(
-                    logs,
-                    [
-                        eval.exact_match(
-                            component="click/gridsort",
-                            newValue='[{"field":"name","sort":"asc"}]',
-                        )
-                    ],
-                ),
-            )
-        ],
+    "find": {
         "findbasic": [
             Test(
                 "Please find when the AGI Research Lab was founded and enter the year into the answer box",
@@ -375,6 +347,36 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
                 "Please find when the AGI Research Lab was founded and enter the year into the answer box",
                 lambda logs: eval.at_least_one(
                     logs, [eval.exact_match(component="type/text", newValue="2032")]
+                ),
+            )
+        ],
+    },
+    "filter": {
+        "gridfilter": [
+            Test(
+                "Please filter for orders where the country is USA",
+                lambda logs: eval.at_least_one(
+                    logs,
+                    [
+                        eval.exact_match(
+                            component="click/gridfilter",
+                            newValue='[{"field":"country","operator":"equals","value":"USA"}]',
+                        )
+                    ],
+                ),
+            )
+        ],
+        "gridsort": [
+            Test(
+                "Please sort the table by the name column in ascending order",
+                lambda logs: eval.ordered(
+                    logs,
+                    [
+                        eval.exact_match(
+                            component="click/gridsort",
+                            newValue='[{"field":"name","sort":"asc"}]',
+                        )
+                    ],
                 ),
             )
         ],

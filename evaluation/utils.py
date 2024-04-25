@@ -5,6 +5,17 @@ import time
 
 LOCALHOST_PORT = 3000  # needs to be in sync with /environment/frontend/package.json
 
+TASK_CATEGORY_DICT: dict[str, list[str]] = {
+    "operational": ["click", "type", "select"],
+    "navigational": ["menu"],
+    "informational": ["find", "filter", "fill"],  # search, review
+}
+
+
+TASK_TO_CATEGORY_MAP: dict[str, str] = {
+    task: category for category, tasks in TASK_CATEGORY_DICT.items() for task in tasks
+}
+
 
 def flatten(input: list[list[Any]]) -> list[Any]:
     return [item for sublist in input for item in sublist]

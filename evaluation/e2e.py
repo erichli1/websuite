@@ -4,12 +4,14 @@ import sys
 
 from evaluation.utils import (
     LOCALHOST_PORT,
+    TASK_TO_CATEGORY_MAP,
     generate_checkpoints_from_logs,
     run_agent_with_limits,
 )
 from evaluation.evaluators import Log, golden_matches_processed
 
 PARENT_FOLDER = os.path.join(os.path.dirname(__file__), "../")
+MAX_AGENT_TIME = 60
 
 
 class PlaygroundCheckpoint:
@@ -95,9 +97,9 @@ class EvaluatedCheckpoint:
         checkpoint_status: Literal[
             "full_match", "partial_match", "missing", "extra_in_logs"
         ],
-        correct_logs: list[str],
-        missing_logs: list[str],
-        extra_logs_processed: list[str],
+        correct_logs: list[Log],
+        missing_logs: list[Log],
+        extra_logs_processed: list[Log],
         name: str | None = None,
     ):
         self.url = url
@@ -313,6 +315,210 @@ def compare_processed_and_golden_checkpoints(
     return evaluated_checkpoints
 
 
+class EvaluatedTest:
+    def __init__(
+        self,
+        test_name: str,
+        checkpoints: list[EvaluatedCheckpoint],
+        correct_logs: list[str],
+        missing_logs: list[str],
+    ):
+        self.test_name = test_name
+        self.checkpoints = checkpoints
+        self.correct_logs = correct_logs
+        self.missing_logs = missing_logs
+
+
+def evaluate_logs():
+    evaluated_tests = []
+    logs = generate_checkpoints_from_logs(PARENT_FOLDER + "trajectories/log.txt")
+    for test, checkpoints in logs.items():
+        test_and_checkpoint = test.split("/")[1].strip().split(" ")
+
+        curr_test_name = test_and_checkpoint[0]
+        curr_starting_checkpoint = (
+            test_and_checkpoint[1] if len(test_and_checkpoint) > 1 else None
+        )
+        curr_test_checkpoint_only = (
+            test_and_checkpoint[2] == "-checkpointonly"
+            if len(test_and_checkpoint) > 2
+            else False
+        )
+
+        if curr_test_name in playground_tests:
+            processed_checkpoints = []
+            for checkpoint in checkpoints:
+                processed_checkpoints.append(
+                    PlaygroundCheckpoint(
+                        checkpoint["url"],
+                        logs_list_str_to_list_logs(checkpoint["logs"]),
+                    )
+                )
+
+            golden_checkpoints = playground_tests[curr_test_name].checkpoints
+            if curr_starting_checkpoint is not None:
+                indices = [
+                    index
+                    for index, checkpoint in enumerate(golden_checkpoints)
+                    if checkpoint.name == curr_starting_checkpoint
+                ]
+                golden_checkpoints = golden_checkpoints[indices[0] :]
+
+            if curr_test_checkpoint_only:
+                golden_checkpoints = golden_checkpoints[:1]
+                processed_checkpoints = processed_checkpoints[:1]
+
+            evaluated = compare_processed_and_golden_checkpoints(
+                golden_checkpoints, processed_checkpoints
+            )
+
+            all_correct_logs = []
+            all_missing_logs = []
+
+            # for evaluated_checkpoint in evaluated:
+            #     all_correct_logs.extend(evaluated_checkpoint.correct_logs)
+            #     all_missing_logs.extend(evaluated_checkpoint.missing_logs)
+
+            #     print(
+            #         evaluated_checkpoint.checkpoint_status
+            #         + " "
+            #         + (
+            #             evaluated_checkpoint.name
+            #             if evaluated_checkpoint.name is not None
+            #             else evaluated_checkpoint.url
+            #         )
+            #     )
+            #     if (
+            #         evaluated_checkpoint.checkpoint_status == "partial_match"
+            #         or evaluated_checkpoint.checkpoint_status == "extra_in_logs"
+            #     ):
+            #         print(
+            #             "    CORRECT: "
+            #             + str([str(log) for log in evaluated_checkpoint.correct_logs])
+            #         )
+            #         print(
+            #             "    MISSING: "
+            #             + str([str(log) for log in evaluated_checkpoint.missing_logs])
+            #         )
+            #         print(
+            #             "    EXTRA: "
+            #             + str(
+            #                 [
+            #                     str(log)
+            #                     for log in evaluated_checkpoint.extra_logs_processed
+            #                 ]
+            #             )
+            #         )
+            #     print()
+
+            evaluated_tests.append(
+                EvaluatedTest(
+                    test_name=test,
+                    checkpoints=evaluated,
+                    correct_logs=all_correct_logs,
+                    missing_logs=all_missing_logs,
+                )
+            )
+    return evaluated_tests
+
+
+class CorrectMissingData:
+    def __init__(self, correct: int, missing: int):
+        self.correct = correct
+        self.missing = missing
+
+
+def get_summary_line(text: str, correct: int, missing: int):
+    return f"{text}: {correct}/{correct + missing} ({round(correct * 100 / (correct + missing))}%)\n"
+
+
+def update_summary(summary: dict, components: list, type: str):
+    for component in components:
+        task = component.split("/")[0].strip()
+        category = TASK_TO_CATEGORY_MAP[task]
+        test = component.split("/")[1].strip()
+
+        if category not in summary:
+            summary[category] = {}
+
+        if task not in summary[category]:
+            summary[category][task] = {}
+
+        if test not in summary[category][task]:
+            summary[category][task][test] = CorrectMissingData(0, 0)
+
+        if type == "correct":
+            summary[category][task][test].correct += 1
+        elif type == "missing":
+            summary[category][task][test].missing += 1
+
+
+def export_results(evaluated_tests: list[EvaluatedTest]):
+    with open(PARENT_FOLDER + "output/output.txt", "w") as file:
+        total_correct: list[Log] = []
+        total_missing: list[Log] = []
+
+        for evaluated_test in evaluated_tests:
+            file.write(evaluated_test.test_name + "\n")
+            for evaluated_checkpoint in evaluated_test.checkpoints:
+                if evaluated_checkpoint.checkpoint_status != "extra_in_logs":
+                    file.write(
+                        "    "
+                        + str(evaluated_checkpoint.name)
+                        + " "
+                        + evaluated_checkpoint.checkpoint_status
+                        + "\n"
+                    )
+
+                    total_correct.extend(evaluated_checkpoint.correct_logs)
+                    total_missing.extend(evaluated_checkpoint.missing_logs)
+
+        file.write("\n\n")
+
+        total_correct_components = [correct.component for correct in total_correct]
+        total_missing_components = [missing.component for missing in total_missing]
+
+        summary: dict[str, dict[str, dict[str, CorrectMissingData]]] = {}
+
+        update_summary(summary, total_correct_components, "correct")
+        update_summary(summary, total_missing_components, "missing")
+
+        for category in summary:
+            output = []
+
+            category_correct = 0
+            category_missing = 0
+
+            for task in summary[category]:
+                task_correct = 0
+                task_missing = 0
+
+                for test in summary[category][task]:
+                    test_correct = summary[category][task][test].correct
+                    test_missing = summary[category][task][test].missing
+
+                    output.append(
+                        get_summary_line("        " + test, test_correct, test_missing)
+                    )
+
+                    task_correct += test_correct
+                    task_missing += test_missing
+
+                output.append(
+                    get_summary_line("    " + task, task_correct, task_missing)
+                )
+
+                category_correct += task_correct
+                category_missing += task_missing
+
+            output.append(
+                get_summary_line(category, category_correct, category_missing)
+            )
+
+            output.reverse()
+            file.write("".join(output))
+
+
 if __name__ == "__main__":
     tests = []
     skip_to_evaluate = False
@@ -381,7 +587,7 @@ if __name__ == "__main__":
                 url=f"localhost:{LOCALHOST_PORT}" + test["path"],
                 existing_lines=existing_lines,
                 log_file=PARENT_FOLDER + "trajectories/log.txt",
-                timeout=60,
+                timeout=MAX_AGENT_TIME,
                 addl_lines=100,
                 custom_log_break=(
                     (
@@ -404,76 +610,5 @@ if __name__ == "__main__":
                 file.write("TEST FINISH\n")
 
     # evaluate the logs that exist
-    logs = generate_checkpoints_from_logs(PARENT_FOLDER + "trajectories/log.txt")
-    for test, checkpoints in logs.items():
-        test_and_checkpoint = test.split("/")[1].strip().split(" ")
-
-        curr_test_name = test_and_checkpoint[0]
-        curr_starting_checkpoint = (
-            test_and_checkpoint[1] if len(test_and_checkpoint) > 1 else None
-        )
-        curr_test_checkpoint_only = (
-            test_and_checkpoint[2] == "-checkpointonly"
-            if len(test_and_checkpoint) > 2
-            else False
-        )
-
-        if curr_test_name in playground_tests:
-            processed_checkpoints = []
-            for checkpoint in checkpoints:
-                processed_checkpoints.append(
-                    PlaygroundCheckpoint(
-                        checkpoint["url"],
-                        logs_list_str_to_list_logs(checkpoint["logs"]),
-                    )
-                )
-
-            golden_checkpoints = playground_tests[curr_test_name].checkpoints
-            if curr_starting_checkpoint is not None:
-                indices = [
-                    index
-                    for index, checkpoint in enumerate(golden_checkpoints)
-                    if checkpoint.name == curr_starting_checkpoint
-                ]
-                golden_checkpoints = golden_checkpoints[indices[0] :]
-
-            if curr_test_checkpoint_only:
-                golden_checkpoints = golden_checkpoints[:1]
-                processed_checkpoints = processed_checkpoints[:1]
-
-            evaluated = compare_processed_and_golden_checkpoints(
-                golden_checkpoints, processed_checkpoints
-            )
-
-            for evaluated_checkpoint in evaluated:
-                print(
-                    evaluated_checkpoint.checkpoint_status
-                    + " "
-                    + (
-                        evaluated_checkpoint.name
-                        if evaluated_checkpoint.name is not None
-                        else evaluated_checkpoint.url
-                    )
-                )
-                if (
-                    evaluated_checkpoint.checkpoint_status == "partial_match"
-                    or evaluated_checkpoint.checkpoint_status == "extra_in_logs"
-                ):
-                    print(
-                        "    CORRECT: "
-                        + str([str(log) for log in evaluated_checkpoint.correct_logs])
-                    )
-                    print(
-                        "    MISSING: "
-                        + str([str(log) for log in evaluated_checkpoint.missing_logs])
-                    )
-                    print(
-                        "    EXTRA: "
-                        + str(
-                            [
-                                str(log)
-                                for log in evaluated_checkpoint.extra_logs_processed
-                            ]
-                        )
-                    )
-                print()
+    evaluated_tests = evaluate_logs()
+    export_results(evaluated_tests)

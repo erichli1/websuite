@@ -132,7 +132,13 @@ export const ALL_TESTS: {
       </AppBarContainer>
     ),
   },
-  info: {
+  find: {
+    findbasic: <BasicInfo />,
+    findtooltip: <InfoTooltip />,
+    finddialog: <InfoDialog />,
+    findaccordion: <InfoAccordion />,
+  },
+  filter: {
     gridfilter: (
       <DataGridContainer<{
         name: string;
@@ -163,10 +169,6 @@ export const ALL_TESTS: {
         rows={NAME_COUNTRY_ORDERDATE_ROWS}
       />
     ),
-    findbasic: <BasicInfo />,
-    findtooltip: <InfoTooltip />,
-    finddialog: <InfoDialog />,
-    findaccordion: <InfoAccordion />,
   },
   fill: {
     basicform: (
