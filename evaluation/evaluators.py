@@ -18,15 +18,6 @@ class Log:
         )
 
 
-def golden_matches_processed(golden: Log, processed: Log):
-    basic_eq = (
-        golden.component == processed.component and golden.label == processed.label
-    )
-    new_eq = golden.newValue == processed.newValue if golden.newValue else True
-    old_eq = golden.oldValue == processed.oldValue if golden.oldValue else True
-    return basic_eq and new_eq and old_eq
-
-
 LogListEvaluator: TypeAlias = Callable[[list[Log]], bool]
 LogEvaluator: TypeAlias = Callable[[Log], bool]
 

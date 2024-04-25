@@ -8,12 +8,18 @@ from evaluation.utils import (
     generate_checkpoints_from_logs,
     run_agent_with_limits,
 )
-from evaluation.evaluators import Log, golden_matches_processed
+from evaluation.evaluators import Log
 
 # HELPER CONSTANTS AND CLASSES
 
 PARENT_FOLDER = os.path.join(os.path.dirname(__file__), "../")
 MAX_AGENT_TIME = 60
+
+
+class GoldenLog(Log):
+    def __init__(self, log: str, untracked_component: str | None = None):
+        super().__init__(log)
+        self.untracked_component = untracked_component
 
 
 class Checkpoint:
@@ -29,10 +35,14 @@ class CheckpointFromLogs(Checkpoint):
 
 class GoldenCheckpoint(Checkpoint):
     def __init__(
-        self, url: str, logs: list[Log], name: str, orderless_logs: bool = False
+        self,
+        url: str,
+        golden_logs: list[GoldenLog],
+        name: str,
+        orderless_logs: bool = False,
     ):
         super().__init__(url)
-        self.logs = logs
+        self.golden_logs = golden_logs
         self.name = name
         self.orderless_logs = orderless_logs
 
@@ -42,15 +52,15 @@ class EvaluatedGoldenCheckpoint(Checkpoint):
         self,
         url: str,
         checkpoint_status: Literal["full_match", "partial_match", "missing"],
-        correct_logs: list[Log],
-        missing_logs: list[Log],
+        correct_golden_logs: list[GoldenLog],
+        missing_golden_logs: list[GoldenLog],
         extra_logs_processed: list[Log],
         name: str,
     ):
         super().__init__(url)
         self.checkpoint_status = checkpoint_status
-        self.correct_logs = correct_logs
-        self.missing_logs = missing_logs
+        self.correct_golden_logs = correct_golden_logs
+        self.missing_golden_logs = missing_golden_logs
         self.extra_logs_processed = extra_logs_processed
         self.name = name
 
@@ -66,8 +76,8 @@ class EvaluatedTest:
         self,
         test_name: str,
         checkpoints: list[EvaluatedGoldenCheckpoint],
-        correct_logs: list[str],
-        missing_logs: list[str],
+        correct_logs: list[GoldenLog],
+        missing_logs: list[GoldenLog],
         extra_checkpoints_processed: list[CheckpointFromLogs],
     ):
         self.test_name = test_name
@@ -86,49 +96,42 @@ class CorrectMissingData:
 # TEST LIBRARY
 
 
-def logs_list_str_to_list_logs(logs: list[str]) -> list[Log]:
-    return [Log(log) for log in logs]
-
-
 PLAYGROUND_TESTS: dict[str, PlaygroundTest] = {
     "order": PlaygroundTest(
         goal="Please order a MacBook Pro M3 chip without additional customizations to be delivered to John Doe at 123 Main Street, Cambridge, MA 02138",
         checkpoints=[
             GoldenCheckpoint(
                 "/playground",
-                logs_list_str_to_list_logs(
-                    [
-                        "type/text // Search items // MacBook Pro M3 chip",
-                        "click/iconbutton // Search",
-                    ]
-                ),
+                [
+                    GoldenLog("type/text // Search items // MacBook Pro M3 chip", "search/appropriate"),
+                    GoldenLog("click/iconbutton // Search"),
+                ],
                 "home",
             ),
             GoldenCheckpoint(
                 "/playground/search?query=MacBook Pro M3 chip",
-                logs_list_str_to_list_logs(
-                    ["click/link // 2023 MacBook Pro - M3 chip, 14-inch"]
-                ),
+                [GoldenLog("click/link // 2023 MacBook Pro - M3 chip, 14-inch")],
                 "search",
             ),
             GoldenCheckpoint(
                 "/playground/product/1",
-                logs_list_str_to_list_logs(["click/button // Buy now"]),
+                [GoldenLog("click/button // Buy now")],
                 "item_page",
             ),
             GoldenCheckpoint(
                 "/playground/checkout",
-                logs_list_str_to_list_logs(
-                    [
-                        "type/text // First name // John",
-                        "type/text // Last name // Doe",
+                [
+                    GoldenLog("type/text // First name // John","fill/complex"),
+                    GoldenLog("type/text // Last name // Doe","fill/complex"),
+                    GoldenLog(
                         "type/text // Street address // 123 Main Street",
-                        "type/text // City // Cambridge",
-                        "select/select // State // MA",
-                        "type/text // Zip code // 02138",
-                        "click/button // Order",
-                    ]
-                ),
+                       "fill/complex",
+                    ),
+                    GoldenLog("type/text // City // Cambridge","fill/complex"),
+                    GoldenLog("select/select // State // MA","fill/complex"),
+                    GoldenLog("type/text // Zip code // 02138","fill/complex"),
+                    GoldenLog("click/button // Order","fill/complex"),
+                ],
                 "buy",
                 orderless_logs=True,
             ),
@@ -153,11 +156,11 @@ def print_evaluated_checkpoints(evaluated_checkpoints: list[EvaluatedGoldenCheck
         ):
             print(
                 "    CORRECT: "
-                + str([str(log) for log in evaluated_checkpoint.correct_logs])
+                + str([str(log) for log in evaluated_checkpoint.correct_golden_logs])
             )
             print(
                 "    MISSING: "
-                + str([str(log) for log in evaluated_checkpoint.missing_logs])
+                + str([str(log) for log in evaluated_checkpoint.missing_golden_logs])
             )
             print(
                 "    EXTRA: "
@@ -171,6 +174,15 @@ def print_extra_checkpoints(extra_checkpoints: list[CheckpointFromLogs]):
         print("EXTRA: " + extra_checkpoint.url)
         print("    LOGS: " + str([str(log) for log in extra_checkpoint.logs]))
         print()
+
+
+def golden_matches_processed(golden: GoldenLog, processed: Log):
+    basic_eq = (
+        golden.component == processed.component and golden.label == processed.label
+    )
+    new_eq = golden.newValue == processed.newValue if golden.newValue else True
+    old_eq = golden.oldValue == processed.oldValue if golden.oldValue else True
+    return basic_eq and new_eq and old_eq
 
 
 def compare_processed_and_golden_checkpoints(
@@ -206,8 +218,10 @@ def compare_processed_and_golden_checkpoints(
                     EvaluatedGoldenCheckpoint(
                         url=golden_checkpoints[golden_index].url,
                         checkpoint_status="missing",
-                        correct_logs=[],
-                        missing_logs=golden_checkpoints[golden_index].logs,
+                        correct_golden_logs=[],
+                        missing_golden_logs=golden_checkpoints[
+                            golden_index
+                        ].golden_logs,
                         extra_logs_processed=[],
                         name=golden_checkpoints[golden_index].name,
                     )
@@ -220,11 +234,11 @@ def compare_processed_and_golden_checkpoints(
             == processed_checkpoints[processed_index].url.strip()
         ):
             # identify the correct, missing, incorrect, extra logs
-            correct_logs = []
-            missing_logs = []
+            correct_golden_logs = []
+            missing_golden_logs = []
             extra_logs_processed = []
 
-            golden_logs = golden_checkpoints[golden_index].logs
+            golden_logs = golden_checkpoints[golden_index].golden_logs
             processed_logs = processed_checkpoints[processed_index].logs
 
             # basic parsing of logs if order doesn't matter
@@ -234,9 +248,9 @@ def compare_processed_and_golden_checkpoints(
                         golden_matches_processed(golden, processed)
                         for processed in processed_logs
                     ):
-                        correct_logs.append(golden)
+                        correct_golden_logs.append(golden)
                     else:
-                        missing_logs.append(golden)
+                        missing_golden_logs.append(golden)
 
                 for processed in processed_logs:
                     if not any(
@@ -272,7 +286,7 @@ def compare_processed_and_golden_checkpoints(
                         for golden_logs_index in range(
                             golden_logs_index, len(golden_logs)
                         ):
-                            missing_logs.append(golden_logs[golden_logs_index])
+                            missing_golden_logs.append(golden_logs[golden_logs_index])
                         break
 
                     # if both are in bounds, we compare the logs
@@ -280,7 +294,7 @@ def compare_processed_and_golden_checkpoints(
                         golden_logs[golden_logs_index],
                         processed_logs[processed_logs_index],
                     ):
-                        correct_logs.append(golden_logs[golden_logs_index])
+                        correct_golden_logs.append(golden_logs[golden_logs_index])
                         golden_logs_index += 1
                         processed_logs_index += 1
                     else:
@@ -312,17 +326,19 @@ def compare_processed_and_golden_checkpoints(
                                 extra_logs_processed.append(processed_logs[i])
                             processed_logs_index += i_index
                         else:
-                            missing_logs.append(golden_logs[golden_logs_index])
+                            missing_golden_logs.append(golden_logs[golden_logs_index])
                             golden_logs_index += 1
 
-            full_match = len(correct_logs) == len(golden_logs) == len(processed_logs)
+            full_match = (
+                len(correct_golden_logs) == len(golden_logs) == len(processed_logs)
+            )
 
             evaluated_checkpoints.append(
                 EvaluatedGoldenCheckpoint(
                     url=golden_checkpoints[golden_index].url,
                     checkpoint_status="full_match" if full_match else "partial_match",
-                    correct_logs=correct_logs,
-                    missing_logs=missing_logs,
+                    correct_golden_logs=correct_golden_logs,
+                    missing_golden_logs=missing_golden_logs,
                     extra_logs_processed=extra_logs_processed,
                     name=golden_checkpoints[golden_index].name,
                 )
@@ -353,8 +369,10 @@ def compare_processed_and_golden_checkpoints(
                     EvaluatedGoldenCheckpoint(
                         url=golden_checkpoints[golden_index].url,
                         checkpoint_status="missing",
-                        correct_logs=[],
-                        missing_logs=golden_checkpoints[golden_index].logs,
+                        correct_golden_logs=[],
+                        missing_golden_logs=golden_checkpoints[
+                            golden_index
+                        ].golden_logs,
                         extra_logs_processed=[],
                         name=golden_checkpoints[golden_index].name,
                     )
@@ -387,7 +405,7 @@ def evaluate_logs():
                 processed_checkpoints.append(
                     CheckpointFromLogs(
                         checkpoint["url"],
-                        logs_list_str_to_list_logs(checkpoint["logs"]),
+                        [Log(log) for log in checkpoint["logs"]],
                     )
                 )
 
@@ -408,12 +426,12 @@ def evaluate_logs():
                 golden_checkpoints, processed_checkpoints
             )
 
-            all_correct_logs = []
-            all_missing_logs = []
+            all_correct_logs: list[GoldenLog] = []
+            all_missing_logs: list[GoldenLog] = []
 
             for evaluated_checkpoint in evaluated:
-                all_correct_logs.extend(evaluated_checkpoint.correct_logs)
-                all_missing_logs.extend(evaluated_checkpoint.missing_logs)
+                all_correct_logs.extend(evaluated_checkpoint.correct_golden_logs)
+                all_missing_logs.extend(evaluated_checkpoint.missing_golden_logs)
 
             print_evaluated_checkpoints(evaluated)
             print_extra_checkpoints(extra)
@@ -462,28 +480,35 @@ def update_summary(summary: dict, components: list, type: str):
 def export_results(evaluated_tests: list[EvaluatedTest]):
     """Exports the results of the evaluated tests into output/output.txt"""
     with open(PARENT_FOLDER + "output/output.txt", "w") as file:
-        total_correct: list[Log] = []
-        total_missing: list[Log] = []
+        total_correct: list[GoldenLog] = []
+        total_missing: list[GoldenLog] = []
 
         for evaluated_test in evaluated_tests:
             file.write(evaluated_test.test_name + "\n")
             for evaluated_checkpoint in evaluated_test.checkpoints:
-                if evaluated_checkpoint.checkpoint_status != "extra_in_logs":
-                    file.write(
-                        "    "
-                        + evaluated_checkpoint.name
-                        + " "
-                        + evaluated_checkpoint.checkpoint_status
-                        + "\n"
-                    )
+                file.write(
+                    "    "
+                    + evaluated_checkpoint.name
+                    + " "
+                    + evaluated_checkpoint.checkpoint_status
+                    + "\n"
+                )
 
-                    total_correct.extend(evaluated_checkpoint.correct_logs)
-                    total_missing.extend(evaluated_checkpoint.missing_logs)
+                total_correct.extend(evaluated_checkpoint.correct_golden_logs)
+                total_missing.extend(evaluated_checkpoint.missing_golden_logs)
 
         file.write("\n\n")
 
-        total_correct_components = [correct.component for correct in total_correct]
-        total_missing_components = [missing.component for missing in total_missing]
+        total_correct_components = []
+        total_missing_components = []
+        for correct in total_correct:
+            total_correct_components.append(correct.component)
+            if correct.untracked_component is not None:
+                total_correct_components.append(correct.untracked_component)
+        for missing in total_missing:
+            total_missing_components.append(missing.component)
+            if missing.untracked_component is not None:
+                total_missing_components.append(missing.untracked_component)
 
         summary: dict[str, dict[str, dict[str, CorrectMissingData]]] = {}
 
