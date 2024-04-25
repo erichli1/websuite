@@ -13,6 +13,9 @@ export default function LoggedIconButton(props: LoggedIconButtonProps) {
   return (
     <IconButton
       {...restProps}
+      {...{
+        "aria-label": restProps["aria-label"] ?? logLabel,
+      }}
       onClick={(event) => {
         log({ component: "click/iconbutton", label: logLabel }).then(() => {
           props.onClick?.(event);

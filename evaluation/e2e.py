@@ -362,10 +362,13 @@ if __name__ == "__main__":
         for test in tests:
             with open(PARENT_FOLDER + "trajectories/log.txt", "a") as file:
                 starting_checkpoint_str = (
-                    test["starting_checkpoint"] + "-checkpointonly"
+                    test["starting_checkpoint"]
                     if test["starting_checkpoint"] is not None
                     else ""
                 )
+                if checkpoint_only:
+                    starting_checkpoint_str += " -checkpointonly"
+
                 file.write(
                     f"TEST BEGIN: playground/{test['test']} {starting_checkpoint_str}\n"
                 )
