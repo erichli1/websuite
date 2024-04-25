@@ -1,4 +1,4 @@
-from typing import Any, TypedDict
+from typing import Any, Callable, TypedDict
 import subprocess
 import threading
 import time
@@ -100,7 +100,13 @@ def generate_checkpoints_from_logs(filename: str) -> dict[str, list]:
     return full
 
 
-def check_log_file(process, line_threshold: int, log_file: str):
+def check_log_file(
+    process,
+    line_threshold: int,
+    log_file: str,
+    custom_log_break: Callable[[list[str]], bool] | None = None,
+    custom_log_break_str: str | None = None,
+):
     while process.poll() is None:
         with open(log_file, "r") as file:
             lines = file.readlines()
@@ -108,15 +114,32 @@ def check_log_file(process, line_threshold: int, log_file: str):
                 process.terminate()
                 print("Process terminated due to excess log entries.")
                 return
+            if custom_log_break and custom_log_break(lines):
+                process.terminate()
+                print(f"Process terminated due to: {custom_log_break_str}")
+                return
         time.sleep(1)
 
 
-def run_with_log_monitoring(command: str, line_threshold: int, log_file: str):
+def run_with_log_monitoring(
+    command: str,
+    line_threshold: int,
+    log_file: str,
+    custom_log_break: Callable[[list[str]], bool] | None = None,
+    custom_log_break_str: str | None = None,
+):
     process = subprocess.Popen(command, shell=True)
 
     # Start thread to monitor the log file
     log_thread = threading.Thread(
-        target=check_log_file, args=(process, line_threshold, log_file)
+        target=check_log_file,
+        args=(
+            process,
+            line_threshold,
+            log_file,
+            custom_log_break,
+            custom_log_break_str,
+        ),
     )
     log_thread.start()
 
@@ -131,11 +154,21 @@ def run_agent_with_limits(
     log_file: str,
     timeout: int | None = None,
     addl_lines: int | None = None,
+    custom_log_break: Callable[[list[str]], bool] | None = None,
+    custom_log_break_str: str | None = None,
 ):
     command = f"""python -m evaluation.agent "{goal}" {url} {timeout}"""
     if addl_lines is not None:
         print(f"    Running with log line threshold of {addl_lines}")
-        run_with_log_monitoring(command, addl_lines + existing_lines, log_file)
+        if custom_log_break:
+            print(f"    Running with custom log break: {custom_log_break_str}")
+        run_with_log_monitoring(
+            command,
+            addl_lines + existing_lines,
+            log_file,
+            custom_log_break,
+            custom_log_break_str,
+        )
     else:
         process = subprocess.Popen(command, shell=True)
         process.wait()

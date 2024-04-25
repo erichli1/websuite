@@ -314,12 +314,17 @@ def compare_processed_and_golden_checkpoints(
 if __name__ == "__main__":
     tests = []
     skip_to_evaluate = False
+    checkpoint_only = False
 
     if len(sys.argv) > 1:
         for i, arg in enumerate(sys.argv[1:]):
             if arg == "-evalonly":
                 skip_to_evaluate = True
                 break
+
+            if arg == "-checkpointonly":
+                checkpoint_only = True
+                continue
 
             parts = arg.split("/", 1)
 
@@ -352,10 +357,15 @@ if __name__ == "__main__":
 
         for test in tests:
             with open(PARENT_FOLDER + "trajectories/log.txt", "a") as file:
-                file.write(
-                    f"TEST BEGIN: playground/{test["test"]} {test["starting_checkpoint"] if test["starting_checkpoint"] is not None else ''}\n"
+                starting_checkpoint_str = (
+                    test["starting_checkpoint"] + "-checkpointonly"
+                    if test["starting_checkpoint"] is not None
+                    else ""
                 )
-                file.write(f"NAVIGATE // {test["path"]}\n")
+                file.write(
+                    f"TEST BEGIN: playground/{test['test']} {starting_checkpoint_str}\n"
+                )
+                file.write(f"NAVIGATE // {test['path']}\n")
 
             existing_lines = 0
             with open(PARENT_FOLDER + "trajectories/log.txt", "r") as file:
@@ -368,6 +378,21 @@ if __name__ == "__main__":
                 log_file=PARENT_FOLDER + "trajectories/log.txt",
                 timeout=60,
                 addl_lines=100,
+                custom_log_break=(
+                    (
+                        lambda lines: len(
+                            [line for line in lines if "NAVIGATE" in line]
+                        )
+                        >= 2
+                    )
+                    if (test["starting_checkpoint"] is not None and checkpoint_only)
+                    else None
+                ),
+                custom_log_break_str=(
+                    "only running for single checkpoint"
+                    if (test["starting_checkpoint"] is not None and checkpoint_only)
+                    else None
+                ),
             )
 
             with open(PARENT_FOLDER + "trajectories/log.txt", "a") as file:
@@ -382,6 +407,12 @@ if __name__ == "__main__":
         curr_starting_checkpoint = (
             test_and_checkpoint[1] if len(test_and_checkpoint) > 1 else None
         )
+        curr_test_checkpoint_only = (
+            test_and_checkpoint[2] == "-checkpointonly"
+            if len(test_and_checkpoint) > 2
+            else False
+        )
+
         if curr_test_name in playground_tests:
             processed_checkpoints = []
             for checkpoint in checkpoints:
@@ -400,6 +431,10 @@ if __name__ == "__main__":
                     if checkpoint.name == curr_starting_checkpoint
                 ]
                 golden_checkpoints = golden_checkpoints[indices[0] :]
+
+            if curr_test_checkpoint_only:
+                golden_checkpoints = golden_checkpoints[:1]
+                processed_checkpoints = processed_checkpoints[:1]
 
             evaluated = compare_processed_and_golden_checkpoints(
                 golden_checkpoints, processed_checkpoints
