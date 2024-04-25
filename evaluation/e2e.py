@@ -97,17 +97,15 @@ playground_tests: dict[str, PlaygroundTest] = {
 }
 
 
-class EvaluatedCheckpoint:
+class EvaluatedGoldenCheckpoint:
     def __init__(
         self,
         url: str,
-        checkpoint_status: Literal[
-            "full_match", "partial_match", "missing", "extra_in_logs"
-        ],
+        checkpoint_status: Literal["full_match", "partial_match", "missing"],
         correct_logs: list[Log],
         missing_logs: list[Log],
         extra_logs_processed: list[Log],
-        name: str | None = None,
+        name: str,
     ):
         self.url = url
         self.checkpoint_status = checkpoint_status
@@ -117,6 +115,22 @@ class EvaluatedCheckpoint:
         self.name = name
 
 
+class EvaluatedTest:
+    def __init__(
+        self,
+        test_name: str,
+        checkpoints: list[EvaluatedGoldenCheckpoint],
+        correct_logs: list[str],
+        missing_logs: list[str],
+        extra_checkpoints_processed: list[CheckpointFromLogs],
+    ):
+        self.test_name = test_name
+        self.checkpoints = checkpoints
+        self.correct_logs = correct_logs
+        self.missing_logs = missing_logs
+        self.extra_checkpoints_processed = extra_checkpoints_processed
+
+
 def compare_processed_and_golden_checkpoints(
     golden_checkpoints: list[GoldenCheckpoint],
     processed_checkpoints: list[CheckpointFromLogs],
@@ -124,7 +138,8 @@ def compare_processed_and_golden_checkpoints(
     golden_index = 0
     processed_index = 0
 
-    evaluated_checkpoints: list[EvaluatedCheckpoint] = []
+    evaluated_checkpoints: list[EvaluatedGoldenCheckpoint] = []
+    extra_checkpoints_processed: list[CheckpointFromLogs] = []
 
     while True:
         # if both golden index and processed index are out of bounds, we are done
@@ -136,16 +151,8 @@ def compare_processed_and_golden_checkpoints(
         # if golden index is out of bounds, but processed index is not, then we mark rest of processed_checkpoints as extra
         if golden_index >= len(golden_checkpoints):
             for processed_index in range(processed_index, len(processed_checkpoints)):
-                evaluated_checkpoints.append(
-                    EvaluatedCheckpoint(
-                        url=processed_checkpoints[processed_index].url,
-                        checkpoint_status="extra_in_logs",
-                        correct_logs=[],
-                        missing_logs=[],
-                        extra_logs_processed=processed_checkpoints[
-                            processed_index
-                        ].logs,
-                    )
+                extra_checkpoints_processed.append(
+                    processed_checkpoints[processed_index]
                 )
             break
 
@@ -153,7 +160,7 @@ def compare_processed_and_golden_checkpoints(
         if processed_index >= len(processed_checkpoints):
             for golden_index in range(golden_index, len(golden_checkpoints)):
                 evaluated_checkpoints.append(
-                    EvaluatedCheckpoint(
+                    EvaluatedGoldenCheckpoint(
                         url=golden_checkpoints[golden_index].url,
                         checkpoint_status="missing",
                         correct_logs=[],
@@ -268,7 +275,7 @@ def compare_processed_and_golden_checkpoints(
             full_match = len(correct_logs) == len(golden_logs) == len(processed_logs)
 
             evaluated_checkpoints.append(
-                EvaluatedCheckpoint(
+                EvaluatedGoldenCheckpoint(
                     url=golden_checkpoints[golden_index].url,
                     checkpoint_status="full_match" if full_match else "partial_match",
                     correct_logs=correct_logs,
@@ -294,21 +301,13 @@ def compare_processed_and_golden_checkpoints(
                     golden_checkpoints[golden_index].url
                 )
                 for i in range(processed_index, processed_index + i_index):
-                    evaluated_checkpoints.append(
-                        EvaluatedCheckpoint(
-                            url=processed_checkpoints[i].url,
-                            checkpoint_status="extra_in_logs",
-                            correct_logs=[],
-                            missing_logs=[],
-                            extra_logs_processed=processed_checkpoints[i].logs,
-                        )
-                    )
+                    extra_checkpoints_processed.append(processed_checkpoints[i])
                 processed_index += i_index
 
             # if we look ahead and doesn't exist later, then we mark current golden as missing
             else:
                 evaluated_checkpoints.append(
-                    EvaluatedCheckpoint(
+                    EvaluatedGoldenCheckpoint(
                         url=golden_checkpoints[golden_index].url,
                         checkpoint_status="missing",
                         correct_logs=[],
@@ -319,34 +318,12 @@ def compare_processed_and_golden_checkpoints(
                 )
                 golden_index += 1
 
-    return evaluated_checkpoints
+    return evaluated_checkpoints, extra_checkpoints_processed
 
 
-class EvaluatedTest:
-    def __init__(
-        self,
-        test_name: str,
-        checkpoints: list[EvaluatedCheckpoint],
-        correct_logs: list[str],
-        missing_logs: list[str],
-    ):
-        self.test_name = test_name
-        self.checkpoints = checkpoints
-        self.correct_logs = correct_logs
-        self.missing_logs = missing_logs
-
-
-def print_evaluated_checkpoints(evaluated_checkpoints: list[EvaluatedCheckpoint]):
+def print_evaluated_checkpoints(evaluated_checkpoints: list[EvaluatedGoldenCheckpoint]):
     for evaluated_checkpoint in evaluated_checkpoints:
-        print(
-            evaluated_checkpoint.checkpoint_status
-            + " "
-            + (
-                evaluated_checkpoint.name
-                if evaluated_checkpoint.name is not None
-                else evaluated_checkpoint.url
-            )
-        )
+        print(evaluated_checkpoint.checkpoint_status + " " + evaluated_checkpoint.name)
         if (
             evaluated_checkpoint.checkpoint_status == "partial_match"
             or evaluated_checkpoint.checkpoint_status == "extra_in_logs"
@@ -363,6 +340,13 @@ def print_evaluated_checkpoints(evaluated_checkpoints: list[EvaluatedCheckpoint]
                 "    EXTRA: "
                 + str([str(log) for log in evaluated_checkpoint.extra_logs_processed])
             )
+        print()
+
+
+def print_extra_checkpoints(extra_checkpoints: list[CheckpointFromLogs]):
+    for extra_checkpoint in extra_checkpoints:
+        print("EXTRA: " + extra_checkpoint.url)
+        print("    LOGS: " + str([str(log) for log in extra_checkpoint.logs]))
         print()
 
 
@@ -405,7 +389,7 @@ def evaluate_logs():
                 golden_checkpoints = golden_checkpoints[:1]
                 processed_checkpoints = processed_checkpoints[:1]
 
-            evaluated = compare_processed_and_golden_checkpoints(
+            evaluated, extra = compare_processed_and_golden_checkpoints(
                 golden_checkpoints, processed_checkpoints
             )
 
@@ -416,8 +400,8 @@ def evaluate_logs():
                 all_correct_logs.extend(evaluated_checkpoint.correct_logs)
                 all_missing_logs.extend(evaluated_checkpoint.missing_logs)
 
-
             print_evaluated_checkpoints(evaluated)
+            print_extra_checkpoints(extra)
 
             evaluated_tests.append(
                 EvaluatedTest(
@@ -425,6 +409,7 @@ def evaluate_logs():
                     checkpoints=evaluated,
                     correct_logs=all_correct_logs,
                     missing_logs=all_missing_logs,
+                    extra_checkpoints_processed=extra,
                 )
             )
     return evaluated_tests
@@ -472,7 +457,7 @@ def export_results(evaluated_tests: list[EvaluatedTest]):
                 if evaluated_checkpoint.checkpoint_status != "extra_in_logs":
                     file.write(
                         "    "
-                        + str(evaluated_checkpoint.name)
+                        + evaluated_checkpoint.name
                         + " "
                         + evaluated_checkpoint.checkpoint_status
                         + "\n"
