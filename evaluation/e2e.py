@@ -10,6 +10,8 @@ from evaluation.utils import (
 )
 from evaluation.evaluators import Log, golden_matches_processed
 
+# HELPER CONSTANTS AND CLASSES
+
 PARENT_FOLDER = os.path.join(os.path.dirname(__file__), "../")
 MAX_AGENT_TIME = 60
 
@@ -35,17 +37,60 @@ class GoldenCheckpoint(Checkpoint):
         self.orderless_logs = orderless_logs
 
 
+class EvaluatedGoldenCheckpoint(Checkpoint):
+    def __init__(
+        self,
+        url: str,
+        checkpoint_status: Literal["full_match", "partial_match", "missing"],
+        correct_logs: list[Log],
+        missing_logs: list[Log],
+        extra_logs_processed: list[Log],
+        name: str,
+    ):
+        super().__init__(url)
+        self.checkpoint_status = checkpoint_status
+        self.correct_logs = correct_logs
+        self.missing_logs = missing_logs
+        self.extra_logs_processed = extra_logs_processed
+        self.name = name
+
+
 class PlaygroundTest:
     def __init__(self, goal: str, checkpoints: list[GoldenCheckpoint]):
         self.goal = goal
         self.checkpoints = checkpoints
 
 
+class EvaluatedTest:
+    def __init__(
+        self,
+        test_name: str,
+        checkpoints: list[EvaluatedGoldenCheckpoint],
+        correct_logs: list[str],
+        missing_logs: list[str],
+        extra_checkpoints_processed: list[CheckpointFromLogs],
+    ):
+        self.test_name = test_name
+        self.checkpoints = checkpoints
+        self.correct_logs = correct_logs
+        self.missing_logs = missing_logs
+        self.extra_checkpoints_processed = extra_checkpoints_processed
+
+
+class CorrectMissingData:
+    def __init__(self, correct: int, missing: int):
+        self.correct = correct
+        self.missing = missing
+
+
+# TEST LIBRARY
+
+
 def logs_list_str_to_list_logs(logs: list[str]) -> list[Log]:
     return [Log(log) for log in logs]
 
 
-playground_tests: dict[str, PlaygroundTest] = {
+PLAYGROUND_TESTS: dict[str, PlaygroundTest] = {
     "order": PlaygroundTest(
         goal="Please order a MacBook Pro M3 chip without additional customizations to be delivered to John Doe at 123 Main Street, Cambridge, MA 02138",
         checkpoints=[
@@ -96,45 +141,43 @@ playground_tests: dict[str, PlaygroundTest] = {
     )
 }
 
-
-class EvaluatedGoldenCheckpoint:
-    def __init__(
-        self,
-        url: str,
-        checkpoint_status: Literal["full_match", "partial_match", "missing"],
-        correct_logs: list[Log],
-        missing_logs: list[Log],
-        extra_logs_processed: list[Log],
-        name: str,
-    ):
-        self.url = url
-        self.checkpoint_status = checkpoint_status
-        self.correct_logs = correct_logs
-        self.missing_logs = missing_logs
-        self.extra_logs_processed = extra_logs_processed
-        self.name = name
+# EVALUATING THE TRAJECTORIES
 
 
-class EvaluatedTest:
-    def __init__(
-        self,
-        test_name: str,
-        checkpoints: list[EvaluatedGoldenCheckpoint],
-        correct_logs: list[str],
-        missing_logs: list[str],
-        extra_checkpoints_processed: list[CheckpointFromLogs],
-    ):
-        self.test_name = test_name
-        self.checkpoints = checkpoints
-        self.correct_logs = correct_logs
-        self.missing_logs = missing_logs
-        self.extra_checkpoints_processed = extra_checkpoints_processed
+def print_evaluated_checkpoints(evaluated_checkpoints: list[EvaluatedGoldenCheckpoint]):
+    for evaluated_checkpoint in evaluated_checkpoints:
+        print(evaluated_checkpoint.checkpoint_status + " " + evaluated_checkpoint.name)
+        if (
+            evaluated_checkpoint.checkpoint_status == "partial_match"
+            or evaluated_checkpoint.checkpoint_status == "extra_in_logs"
+        ):
+            print(
+                "    CORRECT: "
+                + str([str(log) for log in evaluated_checkpoint.correct_logs])
+            )
+            print(
+                "    MISSING: "
+                + str([str(log) for log in evaluated_checkpoint.missing_logs])
+            )
+            print(
+                "    EXTRA: "
+                + str([str(log) for log in evaluated_checkpoint.extra_logs_processed])
+            )
+        print()
+
+
+def print_extra_checkpoints(extra_checkpoints: list[CheckpointFromLogs]):
+    for extra_checkpoint in extra_checkpoints:
+        print("EXTRA: " + extra_checkpoint.url)
+        print("    LOGS: " + str([str(log) for log in extra_checkpoint.logs]))
+        print()
 
 
 def compare_processed_and_golden_checkpoints(
     golden_checkpoints: list[GoldenCheckpoint],
     processed_checkpoints: list[CheckpointFromLogs],
 ):
+    """Compares the golden checkpoints with the processed checkpoints and returns the evaluated golden checkpoints as well as any extra checkpoints in processed."""
     golden_index = 0
     processed_index = 0
 
@@ -321,36 +364,8 @@ def compare_processed_and_golden_checkpoints(
     return evaluated_checkpoints, extra_checkpoints_processed
 
 
-def print_evaluated_checkpoints(evaluated_checkpoints: list[EvaluatedGoldenCheckpoint]):
-    for evaluated_checkpoint in evaluated_checkpoints:
-        print(evaluated_checkpoint.checkpoint_status + " " + evaluated_checkpoint.name)
-        if (
-            evaluated_checkpoint.checkpoint_status == "partial_match"
-            or evaluated_checkpoint.checkpoint_status == "extra_in_logs"
-        ):
-            print(
-                "    CORRECT: "
-                + str([str(log) for log in evaluated_checkpoint.correct_logs])
-            )
-            print(
-                "    MISSING: "
-                + str([str(log) for log in evaluated_checkpoint.missing_logs])
-            )
-            print(
-                "    EXTRA: "
-                + str([str(log) for log in evaluated_checkpoint.extra_logs_processed])
-            )
-        print()
-
-
-def print_extra_checkpoints(extra_checkpoints: list[CheckpointFromLogs]):
-    for extra_checkpoint in extra_checkpoints:
-        print("EXTRA: " + extra_checkpoint.url)
-        print("    LOGS: " + str([str(log) for log in extra_checkpoint.logs]))
-        print()
-
-
 def evaluate_logs():
+    """Pulls the logs from trajectories/log.txt and then evaluates them against the golden checkpoints. Returns a list of EvaluatedTest objects."""
     evaluated_tests = []
     logs = generate_checkpoints_from_logs(PARENT_FOLDER + "trajectories/log.txt")
     for test, checkpoints in logs.items():
@@ -366,7 +381,7 @@ def evaluate_logs():
             else False
         )
 
-        if curr_test_name in playground_tests:
+        if curr_test_name in PLAYGROUND_TESTS:
             processed_checkpoints: list[CheckpointFromLogs] = []
             for checkpoint in checkpoints:
                 processed_checkpoints.append(
@@ -376,7 +391,7 @@ def evaluate_logs():
                     )
                 )
 
-            golden_checkpoints = playground_tests[curr_test_name].checkpoints
+            golden_checkpoints = PLAYGROUND_TESTS[curr_test_name].checkpoints
             if curr_starting_checkpoint is not None:
                 indices = [
                     index
@@ -415,10 +430,7 @@ def evaluate_logs():
     return evaluated_tests
 
 
-class CorrectMissingData:
-    def __init__(self, correct: int, missing: int):
-        self.correct = correct
-        self.missing = missing
+# GENERATING SUMMARY AND EXPORTING RESULTS
 
 
 def get_summary_line(text: str, correct: int, missing: int):
@@ -426,6 +438,7 @@ def get_summary_line(text: str, correct: int, missing: int):
 
 
 def update_summary(summary: dict, components: list, type: str):
+    """Given the summary dictionary, it updates according to the list of components (from logs) and type of list (either correct or missing)"""
     for component in components:
         task = component.split("/")[0].strip()
         category = TASK_TO_CATEGORY_MAP[task]
@@ -447,6 +460,7 @@ def update_summary(summary: dict, components: list, type: str):
 
 
 def export_results(evaluated_tests: list[EvaluatedTest]):
+    """Exports the results of the evaluated tests into output/output.txt"""
     with open(PARENT_FOLDER + "output/output.txt", "w") as file:
         total_correct: list[Log] = []
         total_missing: list[Log] = []
@@ -512,6 +526,9 @@ def export_results(evaluated_tests: list[EvaluatedTest]):
             file.write("".join(output))
 
 
+# E2E test scaffolding
+
+
 if __name__ == "__main__":
     tests = []
     skip_to_evaluate = False
@@ -529,7 +546,7 @@ if __name__ == "__main__":
 
             parts = arg.split("/", 1)
 
-            if parts[0] in playground_tests:
+            if parts[0] in PLAYGROUND_TESTS:
                 if len(parts) == 1:
                     tests.append(
                         {
@@ -539,7 +556,7 @@ if __name__ == "__main__":
                         }
                     )
                 elif len(parts) == 2:
-                    for checkpoint in playground_tests[parts[0]].checkpoints:
+                    for checkpoint in PLAYGROUND_TESTS[parts[0]].checkpoints:
                         if parts[1] == checkpoint.name:
                             tests.append(
                                 {
@@ -552,6 +569,7 @@ if __name__ == "__main__":
             else:
                 print(f"ERROR: unable to find test {parts[0]}")
 
+    # Run the agent
     if not skip_to_evaluate:
         with open(PARENT_FOLDER + "trajectories/log.txt", "w") as file:
             pass
@@ -576,7 +594,7 @@ if __name__ == "__main__":
                 existing_lines = len(file.readlines())
 
             run_agent_with_limits(
-                goal=playground_tests[test["test"]].goal,
+                goal=PLAYGROUND_TESTS[test["test"]].goal,
                 url=f"localhost:{LOCALHOST_PORT}" + test["path"],
                 existing_lines=existing_lines,
                 log_file=PARENT_FOLDER + "trajectories/log.txt",
@@ -602,6 +620,6 @@ if __name__ == "__main__":
             with open(PARENT_FOLDER + "trajectories/log.txt", "a") as file:
                 file.write("TEST FINISH\n")
 
-    # evaluate the logs that exist
+    # Evaluate the logs that exist
     evaluated_tests = evaluate_logs()
     export_results(evaluated_tests)
