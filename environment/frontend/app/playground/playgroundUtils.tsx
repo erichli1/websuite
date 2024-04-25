@@ -21,11 +21,23 @@ export function searchProducts(keywords: string | null) {
 
   return PLAYGROUND_PRODUCTS.filter(
     (product) =>
-      product.name.toLowerCase().includes(keywords.toLowerCase()) ||
-      product.description.toLowerCase().includes(keywords.toLowerCase()) ||
+      matchSubstrings(product.name.toLowerCase(), keywords.toLowerCase()) ||
+      matchSubstrings(
+        product.description.toLowerCase(),
+        keywords.toLowerCase()
+      ) ||
       product.keywords.some((productKeyword) =>
         productKeyword.toLowerCase().includes(keywords.toLowerCase())
       )
+  );
+}
+
+function matchSubstrings(word1: string, word2: string): boolean {
+  let word1Words = word1.toLowerCase().split(" ");
+  let word2Array = word2.toLowerCase().split(" ");
+
+  return word2Array.some((keyword) =>
+    word1Words.some((word) => word.includes(keyword))
   );
 }
 

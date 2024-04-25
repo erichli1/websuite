@@ -38,20 +38,20 @@ def logs_list_str_to_list_logs(logs: list[str]) -> list[Log]:
 
 playground_tests: dict[str, PlaygroundTest] = {
     "order": PlaygroundTest(
-        goal="Please order a laptop to be delivered to John Doe at 123 Main Street, Cambridge, MA 02138",
+        goal="Please order a MacBook Pro M3 chip without additional customizations to be delivered to John Doe at 123 Main Street, Cambridge, MA 02138",
         checkpoints=[
             PlaygroundCheckpoint(
                 "/playground",
                 logs_list_str_to_list_logs(
                     [
-                        "type/text // Search items // laptop",
+                        "type/text // Search items // MacBook Pro M3 chip",
                         "click/iconbutton // Search",
                     ]
                 ),
                 "home",
             ),
             PlaygroundCheckpoint(
-                "/playground/search?query=laptop",
+                "/playground/search?query=MacBook Pro M3 chip",
                 logs_list_str_to_list_logs(
                     ["click/link // 2023 MacBook Pro - M3 chip, 14-inch"]
                 ),
