@@ -14,22 +14,29 @@ PARENT_FOLDER = os.path.join(os.path.dirname(__file__), "../")
 MAX_AGENT_TIME = 60
 
 
-class PlaygroundCheckpoint:
-    def __init__(
-        self,
-        url: str,
-        logs: list[Log],
-        name: str | None = None,
-        orderless_logs: bool = False,
-    ):
+class Checkpoint:
+    def __init__(self, url: str):
         self.url = url
+
+
+class CheckpointFromLogs(Checkpoint):
+    def __init__(self, url: str, logs: list[Log]):
+        super().__init__(url)
+        self.logs = logs
+
+
+class GoldenCheckpoint(Checkpoint):
+    def __init__(
+        self, url: str, logs: list[Log], name: str, orderless_logs: bool = False
+    ):
+        super().__init__(url)
         self.logs = logs
         self.name = name
         self.orderless_logs = orderless_logs
 
 
 class PlaygroundTest:
-    def __init__(self, goal: str, checkpoints: list[PlaygroundCheckpoint]):
+    def __init__(self, goal: str, checkpoints: list[GoldenCheckpoint]):
         self.goal = goal
         self.checkpoints = checkpoints
 
@@ -42,7 +49,7 @@ playground_tests: dict[str, PlaygroundTest] = {
     "order": PlaygroundTest(
         goal="Please order a MacBook Pro M3 chip without additional customizations to be delivered to John Doe at 123 Main Street, Cambridge, MA 02138",
         checkpoints=[
-            PlaygroundCheckpoint(
+            GoldenCheckpoint(
                 "/playground",
                 logs_list_str_to_list_logs(
                     [
@@ -52,19 +59,19 @@ playground_tests: dict[str, PlaygroundTest] = {
                 ),
                 "home",
             ),
-            PlaygroundCheckpoint(
+            GoldenCheckpoint(
                 "/playground/search?query=MacBook Pro M3 chip",
                 logs_list_str_to_list_logs(
                     ["click/link // 2023 MacBook Pro - M3 chip, 14-inch"]
                 ),
                 "search",
             ),
-            PlaygroundCheckpoint(
+            GoldenCheckpoint(
                 "/playground/product/1",
                 logs_list_str_to_list_logs(["click/button // Buy now"]),
                 "item_page",
             ),
-            PlaygroundCheckpoint(
+            GoldenCheckpoint(
                 "/playground/checkout",
                 logs_list_str_to_list_logs(
                     [
@@ -80,7 +87,7 @@ playground_tests: dict[str, PlaygroundTest] = {
                 "buy",
                 orderless_logs=True,
             ),
-            PlaygroundCheckpoint(
+            GoldenCheckpoint(
                 '/playground/thanks?submitted={"city":"Cambridge","firstName":"John","lastName":"Doe","state":"MA","streetAddress":"123 Main Street","zipCode":"02138"}',
                 [],
                 "ordered",
@@ -111,8 +118,8 @@ class EvaluatedCheckpoint:
 
 
 def compare_processed_and_golden_checkpoints(
-    golden_checkpoints: list[PlaygroundCheckpoint],
-    processed_checkpoints: list[PlaygroundCheckpoint],
+    golden_checkpoints: list[GoldenCheckpoint],
+    processed_checkpoints: list[CheckpointFromLogs],
 ):
     golden_index = 0
     processed_index = 0
@@ -329,6 +336,36 @@ class EvaluatedTest:
         self.missing_logs = missing_logs
 
 
+def print_evaluated_checkpoints(evaluated_checkpoints: list[EvaluatedCheckpoint]):
+    for evaluated_checkpoint in evaluated_checkpoints:
+        print(
+            evaluated_checkpoint.checkpoint_status
+            + " "
+            + (
+                evaluated_checkpoint.name
+                if evaluated_checkpoint.name is not None
+                else evaluated_checkpoint.url
+            )
+        )
+        if (
+            evaluated_checkpoint.checkpoint_status == "partial_match"
+            or evaluated_checkpoint.checkpoint_status == "extra_in_logs"
+        ):
+            print(
+                "    CORRECT: "
+                + str([str(log) for log in evaluated_checkpoint.correct_logs])
+            )
+            print(
+                "    MISSING: "
+                + str([str(log) for log in evaluated_checkpoint.missing_logs])
+            )
+            print(
+                "    EXTRA: "
+                + str([str(log) for log in evaluated_checkpoint.extra_logs_processed])
+            )
+        print()
+
+
 def evaluate_logs():
     evaluated_tests = []
     logs = generate_checkpoints_from_logs(PARENT_FOLDER + "trajectories/log.txt")
@@ -346,10 +383,10 @@ def evaluate_logs():
         )
 
         if curr_test_name in playground_tests:
-            processed_checkpoints = []
+            processed_checkpoints: list[CheckpointFromLogs] = []
             for checkpoint in checkpoints:
                 processed_checkpoints.append(
-                    PlaygroundCheckpoint(
+                    CheckpointFromLogs(
                         checkpoint["url"],
                         logs_list_str_to_list_logs(checkpoint["logs"]),
                     )
@@ -375,41 +412,12 @@ def evaluate_logs():
             all_correct_logs = []
             all_missing_logs = []
 
-            # for evaluated_checkpoint in evaluated:
-            #     all_correct_logs.extend(evaluated_checkpoint.correct_logs)
-            #     all_missing_logs.extend(evaluated_checkpoint.missing_logs)
+            for evaluated_checkpoint in evaluated:
+                all_correct_logs.extend(evaluated_checkpoint.correct_logs)
+                all_missing_logs.extend(evaluated_checkpoint.missing_logs)
 
-            #     print(
-            #         evaluated_checkpoint.checkpoint_status
-            #         + " "
-            #         + (
-            #             evaluated_checkpoint.name
-            #             if evaluated_checkpoint.name is not None
-            #             else evaluated_checkpoint.url
-            #         )
-            #     )
-            #     if (
-            #         evaluated_checkpoint.checkpoint_status == "partial_match"
-            #         or evaluated_checkpoint.checkpoint_status == "extra_in_logs"
-            #     ):
-            #         print(
-            #             "    CORRECT: "
-            #             + str([str(log) for log in evaluated_checkpoint.correct_logs])
-            #         )
-            #         print(
-            #             "    MISSING: "
-            #             + str([str(log) for log in evaluated_checkpoint.missing_logs])
-            #         )
-            #         print(
-            #             "    EXTRA: "
-            #             + str(
-            #                 [
-            #                     str(log)
-            #                     for log in evaluated_checkpoint.extra_logs_processed
-            #                 ]
-            #             )
-            #         )
-            #     print()
+
+            print_evaluated_checkpoints(evaluated)
 
             evaluated_tests.append(
                 EvaluatedTest(
