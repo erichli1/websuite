@@ -53,14 +53,12 @@ playground_tests: dict[str, PlaygroundTest] = {
             PlaygroundCheckpoint(
                 "/playground/search?query=laptop",
                 logs_list_str_to_list_logs(
-                    [
-                        'click/link // OTVOC Laptop 16 inch Windows 11 Pro, VocBook 16, Intel 12th Gen N95, Up to 3.4GHz, 16GB DDR5 RAM, 1TB PCIE NVME SSD, 16" FHD IPS 1920x1200, 2.0MP, 2.4G+5G WiFi, BT 5.0, HDMI, RJ45, Type C, Gray'
-                    ]
+                    ["click/link // 2023 MacBook Pro - M3 chip, 14-inch"]
                 ),
                 "search",
             ),
             PlaygroundCheckpoint(
-                "/playground/product/2",
+                "/playground/product/1",
                 logs_list_str_to_list_logs(["click/button // Buy now"]),
                 "item_page",
             ),
@@ -81,7 +79,7 @@ playground_tests: dict[str, PlaygroundTest] = {
                 orderless_logs=True,
             ),
             PlaygroundCheckpoint(
-                '/playground/thanks?submitted={"city":"Cambridge","firstName":"John","lastName":"Doe","state":"MA","streetAddress":"123 Main St","zipCode":"02138"}',
+                '/playground/thanks?submitted={"city":"Cambridge","firstName":"John","lastName":"Doe","state":"MA","streetAddress":"123 Main Street","zipCode":"02138"}',
                 [],
                 "ordered",
             ),

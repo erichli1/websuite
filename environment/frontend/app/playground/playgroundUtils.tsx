@@ -19,8 +19,13 @@ export function searchProducts(keywords: string | null) {
     return [];
   }
 
-  return PLAYGROUND_PRODUCTS.filter((product) =>
-    product.name.toLowerCase().includes(keywords.toLowerCase())
+  return PLAYGROUND_PRODUCTS.filter(
+    (product) =>
+      product.name.toLowerCase().includes(keywords.toLowerCase()) ||
+      product.description.toLowerCase().includes(keywords.toLowerCase()) ||
+      product.keywords.some((productKeyword) =>
+        productKeyword.toLowerCase().includes(keywords.toLowerCase())
+      )
   );
 }
 

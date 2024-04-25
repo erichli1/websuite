@@ -25,8 +25,7 @@ export default function Page() {
             logLabel={result.name}
           />
           <Typography variant="body1">
-            ${result.price.toFixed(2)} - {result.rating} stars (
-            {result.numRatings})
+            Starts at ${result.basePrice.toFixed(2)}
           </Typography>
         </Box>
       ))}
