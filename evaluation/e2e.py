@@ -1,6 +1,7 @@
 import os
 from typing import Literal
 import sys
+from urllib.parse import urlparse, parse_qs
 
 from evaluation.utils import (
     LOCALHOST_PORT,
@@ -95,7 +96,7 @@ class CorrectMissingData:
 
 # TEST LIBRARY
 
-
+# Uses [...] in URL to indicate that the value is a placeholder (logic implemented in "matching_urls()")
 PLAYGROUND_TESTS: dict[str, PlaygroundTest] = {
     "order": PlaygroundTest(
         goal="Please order a MacBook Pro M3 chip without additional customizations to be delivered to John Doe at 123 Main Street, Cambridge, MA 02138",
@@ -103,14 +104,21 @@ PLAYGROUND_TESTS: dict[str, PlaygroundTest] = {
             GoldenCheckpoint(
                 "/playground",
                 [
-                    GoldenLog("type/text // Search items // MacBook Pro M3 chip", "search/appropriate"),
+                    GoldenLog(
+                        "type/text // Search items",
+                    ),
                     GoldenLog("click/iconbutton // Search"),
                 ],
                 "home",
             ),
             GoldenCheckpoint(
-                "/playground/search?query=MacBook Pro M3 chip",
-                [GoldenLog("click/link // 2023 MacBook Pro - M3 chip, 14-inch")],
+                "/playground/search?query=[MacBook Pro M3 chip]",
+                [
+                    GoldenLog(
+                        "click/link // 2023 MacBook Pro - M3 chip, 14-inch",
+                        "search/appropriate",
+                    )
+                ],
                 "search",
             ),
             GoldenCheckpoint(
@@ -121,16 +129,16 @@ PLAYGROUND_TESTS: dict[str, PlaygroundTest] = {
             GoldenCheckpoint(
                 "/playground/checkout",
                 [
-                    GoldenLog("type/text // First name // John","fill/complex"),
-                    GoldenLog("type/text // Last name // Doe","fill/complex"),
+                    GoldenLog("type/text // First name // John", "fill/complex"),
+                    GoldenLog("type/text // Last name // Doe", "fill/complex"),
                     GoldenLog(
                         "type/text // Street address // 123 Main Street",
-                       "fill/complex",
+                        "fill/complex",
                     ),
-                    GoldenLog("type/text // City // Cambridge","fill/complex"),
-                    GoldenLog("select/select // State // MA","fill/complex"),
-                    GoldenLog("type/text // Zip code // 02138","fill/complex"),
-                    GoldenLog("click/button // Order","fill/complex"),
+                    GoldenLog("type/text // City // Cambridge", "fill/complex"),
+                    GoldenLog("select/select // State // MA", "fill/complex"),
+                    GoldenLog("type/text // Zip code // 02138", "fill/complex"),
+                    GoldenLog("click/button // Order", "fill/complex"),
                 ],
                 "buy",
                 orderless_logs=True,
@@ -185,6 +193,25 @@ def golden_matches_processed(golden: GoldenLog, processed: Log):
     return basic_eq and new_eq and old_eq
 
 
+def matching_urls(golden_url: str, processed_url: str):
+    parsed_golden = urlparse(golden_url)
+    parsed_processed = urlparse(processed_url)
+
+    same_path = parsed_golden.path == parsed_processed.path
+    if same_path:
+        golden_qp = parse_qs(parsed_golden.query)
+        processed_qp = parse_qs(parsed_processed.query)
+
+        # Account for filler params
+        for key in list(golden_qp.keys()):
+            if golden_qp[key][0].startswith("[") and golden_qp[key][0].endswith("]"):
+                golden_qp[key] = processed_qp[key]
+
+        return golden_qp == processed_qp
+
+    return False
+
+
 def compare_processed_and_golden_checkpoints(
     golden_checkpoints: list[GoldenCheckpoint],
     processed_checkpoints: list[CheckpointFromLogs],
@@ -229,9 +256,9 @@ def compare_processed_and_golden_checkpoints(
             break
 
         # if both golden index and processed index are in bounds, we compare the urls. if match...
-        if (
-            golden_checkpoints[golden_index].url.strip()
-            == processed_checkpoints[processed_index].url.strip()
+        if matching_urls(
+            golden_checkpoints[golden_index].url.strip(),
+            processed_checkpoints[processed_index].url.strip(),
         ):
             # identify the correct, missing, incorrect, extra logs
             correct_golden_logs = []
@@ -355,7 +382,10 @@ def compare_processed_and_golden_checkpoints(
             ]
 
             # if golden_checkpoint exists farther down the processed logs
-            if golden_checkpoints[golden_index].url in future_processed_checkpoint_urls:
+            if any(
+                matching_urls(golden_checkpoints[golden_index].url, future)
+                for future in future_processed_checkpoint_urls
+            ):
                 i_index = future_processed_checkpoint_urls.index(
                     golden_checkpoints[golden_index].url
                 )
