@@ -34,8 +34,22 @@ export async function submit({ input }: { input: string }) {
   });
 }
 
+function deepSortObject(obj: any) {
+  if (typeof obj !== "object" || obj === null) {
+    return obj;
+  }
+
+  const keys = Object.keys(obj).sort();
+  const newObj: { [key: string]: any } = {};
+  for (const key of keys) {
+    newObj[key] = deepSortObject(obj[key]); // Recursive sorting
+  }
+  return newObj;
+}
+
 export function stringifyJsonSortKeys(obj: any) {
-  return JSON.stringify(obj, Object.keys(obj).sort());
+  const sorted_obj = deepSortObject(obj);
+  return JSON.stringify(sorted_obj);
 }
 
 export async function navigate({ url }: { url: string }) {

@@ -1,14 +1,14 @@
 "use client";
 
 import { Stack, Typography } from "@mui/material";
-import { getSearchProduct, navigateTo } from "../../playgroundUtils";
+import {
+  SelectedCustomization,
+  getSearchProduct,
+  navigateTo,
+} from "../../playgroundUtils";
 import LoggedButton from "@/ui/components/click/button/LoggedButton";
 import { useRouter } from "next/navigation";
 import React from "react";
-
-type SelectedCustomization = {
-  [key: string]: string;
-};
 
 export default function Page({ params }: { params: { id: string } }) {
   const product = getSearchProduct(params.id);
@@ -80,7 +80,16 @@ export default function Page({ params }: { params: { id: string } }) {
         <LoggedButton
           logLabel="Buy now"
           variant="contained"
-          onClick={() => navigateTo({ router, url: "/playground/checkout" })}
+          onClick={() =>
+            navigateTo({
+              router,
+              url: `/playground/checkout?cart=${JSON.stringify({
+                id: product.id,
+                customizations: selectedCustomizations,
+                price,
+              })}`,
+            })
+          }
         />
       </div>
     </>

@@ -44,3 +44,7 @@ function matchSubstrings(word1: string, word2: string): boolean {
 export function getSearchProduct(id: string) {
   return PLAYGROUND_PRODUCTS.find((product) => product.id === id);
 }
+
+export type SelectedCustomization = {
+  [key: string]: string;
+};

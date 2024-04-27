@@ -2,6 +2,7 @@ import os
 from typing import Literal
 import sys
 from urllib.parse import urlparse, parse_qs
+import json
 
 from evaluation.utils import (
     LOCALHOST_PORT,
@@ -66,10 +67,17 @@ class EvaluatedGoldenCheckpoint(Checkpoint):
         self.name = name
 
 
+class e2eTest:
+    def __init__(self, path: str, params: dict):
+        self.path = path
+        self.params = params
+
+
 class PlaygroundTest:
-    def __init__(self, goal: str, checkpoints: list[GoldenCheckpoint]):
+    def __init__(self, goal: str, checkpoints: list[GoldenCheckpoint], e2e: e2eTest):
         self.goal = goal
         self.checkpoints = checkpoints
+        self.e2e = e2e
 
 
 class EvaluatedTest:
@@ -80,12 +88,14 @@ class EvaluatedTest:
         correct_logs: list[GoldenLog],
         missing_logs: list[GoldenLog],
         extra_checkpoints_processed: list[CheckpointFromLogs],
+        e2e_result: bool,
     ):
         self.test_name = test_name
         self.checkpoints = checkpoints
         self.correct_logs = correct_logs
         self.missing_logs = missing_logs
         self.extra_checkpoints_processed = extra_checkpoints_processed
+        self.e2e_result = e2e_result
 
 
 class CorrectMissingData:
@@ -109,7 +119,7 @@ PLAYGROUND_TESTS: dict[str, PlaygroundTest] = {
                     ),
                     GoldenLog("click/iconbutton // Search"),
                 ],
-                "home",
+                "search_for_item",
             ),
             GoldenCheckpoint(
                 "/playground/search?query=[MacBook Pro M3 chip]",
@@ -119,15 +129,15 @@ PLAYGROUND_TESTS: dict[str, PlaygroundTest] = {
                         "search/appropriate",
                     )
                 ],
-                "search",
+                "select_item_from_search",
             ),
             GoldenCheckpoint(
                 "/playground/product/1",
                 [GoldenLog("click/button // Buy now")],
-                "item_page",
+                "purchase_item",
             ),
             GoldenCheckpoint(
-                "/playground/checkout",
+                '/playground/checkout?cart={"id":"1","customizations":{"memory":"8GB","storage":"512GB"},"price":1599}',
                 [
                     GoldenLog("type/text // First name // John", "fill/complex"),
                     GoldenLog("type/text // Last name // Doe", "fill/complex"),
@@ -140,15 +150,30 @@ PLAYGROUND_TESTS: dict[str, PlaygroundTest] = {
                     GoldenLog("type/text // Zip code // 02138", "fill/complex"),
                     GoldenLog("click/button // Order", "fill/complex"),
                 ],
-                "buy",
+                "fill_shipping_info",
                 orderless_logs=True,
             ),
-            GoldenCheckpoint(
-                '/playground/thanks?submitted={"city":"Cambridge","firstName":"John","lastName":"Doe","state":"MA","streetAddress":"123 Main Street","zipCode":"02138"}',
-                [],
-                "ordered",
-            ),
         ],
+        e2e=e2eTest(
+            "/playground/thanks",
+            {
+                "cart": {
+                    "customizations": {
+                        "memory": "8GB",
+                        "storage": "512GB",
+                    },
+                    "id": "1",
+                },
+                "location": {
+                    "city": "Cambridge",
+                    "firstName": "John",
+                    "lastName": "Doe",
+                    "state": "MA",
+                    "streetAddress": "123 Main Street",
+                    "zipCode": "02138",
+                },
+            },
+        ),
     )
 }
 
@@ -412,6 +437,21 @@ def compare_processed_and_golden_checkpoints(
     return evaluated_checkpoints, extra_checkpoints_processed
 
 
+def evaluate_e2e(e2e: e2eTest, log: CheckpointFromLogs) -> bool:
+    parsed_url = urlparse(log.url)
+    if parsed_url.path == e2e.path:
+        parsed_query_raw = parse_qs(parsed_url.query)
+
+        parsed_query = {}
+        for key, value in parsed_query_raw.items():
+            parsed_query[key] = json.loads(value[0])
+
+        if parsed_query == e2e.params:
+            return True
+
+    return False
+
+
 def evaluate_logs():
     """Pulls the logs from trajectories/log.txt and then evaluates them against the golden checkpoints. Returns a list of EvaluatedTest objects."""
     evaluated_tests = []
@@ -452,27 +492,33 @@ def evaluate_logs():
                 golden_checkpoints = golden_checkpoints[:1]
                 processed_checkpoints = processed_checkpoints[:1]
 
-            evaluated, extra = compare_processed_and_golden_checkpoints(
+            evaluated_logs, extra_logs = compare_processed_and_golden_checkpoints(
                 golden_checkpoints, processed_checkpoints
             )
 
             all_correct_logs: list[GoldenLog] = []
             all_missing_logs: list[GoldenLog] = []
 
-            for evaluated_checkpoint in evaluated:
+            for evaluated_checkpoint in evaluated_logs:
                 all_correct_logs.extend(evaluated_checkpoint.correct_golden_logs)
                 all_missing_logs.extend(evaluated_checkpoint.missing_golden_logs)
 
-            print_evaluated_checkpoints(evaluated)
-            print_extra_checkpoints(extra)
+            # print_evaluated_checkpoints(evaluated_logs)
+            # print_extra_checkpoints(extra_logs)
+
+            e2e_result = any(
+                evaluate_e2e(PLAYGROUND_TESTS[curr_test_name].e2e, extra)
+                for extra in extra_logs
+            )
 
             evaluated_tests.append(
                 EvaluatedTest(
                     test_name=test,
-                    checkpoints=evaluated,
+                    checkpoints=evaluated_logs,
                     correct_logs=all_correct_logs,
                     missing_logs=all_missing_logs,
-                    extra_checkpoints_processed=extra,
+                    extra_checkpoints_processed=extra_logs,
+                    e2e_result=e2e_result,
                 )
             )
     return evaluated_tests
@@ -514,7 +560,12 @@ def export_results(evaluated_tests: list[EvaluatedTest]):
         total_missing: list[GoldenLog] = []
 
         for evaluated_test in evaluated_tests:
-            file.write(evaluated_test.test_name + "\n")
+            file.write(
+                evaluated_test.test_name
+                + " "
+                + ("pass" if evaluated_test.e2e_result else "fail")
+                + "\n"
+            )
             for evaluated_checkpoint in evaluated_test.checkpoints:
                 file.write(
                     "    "
