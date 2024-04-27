@@ -88,7 +88,7 @@ class EvaluatedTest:
         correct_logs: list[GoldenLog],
         missing_logs: list[GoldenLog],
         extra_checkpoints_processed: list[CheckpointFromLogs],
-        e2e_result: bool,
+        e2e_result: bool | None,
     ):
         self.test_name = test_name
         self.checkpoints = checkpoints
@@ -122,7 +122,7 @@ PLAYGROUND_TESTS: dict[str, PlaygroundTest] = {
                 "search_for_item",
             ),
             GoldenCheckpoint(
-                "/playground/search?query=[MacBook Pro M3 chip]",
+                "/playground/search?query=[]",
                 [
                     GoldenLog(
                         "click/link // 2023 MacBook Pro - M3 chip, 14-inch",
@@ -137,7 +137,7 @@ PLAYGROUND_TESTS: dict[str, PlaygroundTest] = {
                 "purchase_item",
             ),
             GoldenCheckpoint(
-                '/playground/checkout?cart={"id":"1","customizations":{"memory":"8GB","storage":"512GB"},"price":1599}',
+                "/playground/checkout?cart=[]",
                 [
                     GoldenLog("type/text // First name // John", "fill/complex"),
                     GoldenLog("type/text // Last name // Doe", "fill/complex"),
@@ -506,10 +506,12 @@ def evaluate_logs():
             # print_evaluated_checkpoints(evaluated_logs)
             # print_extra_checkpoints(extra_logs)
 
-            e2e_result = any(
-                evaluate_e2e(PLAYGROUND_TESTS[curr_test_name].e2e, extra)
-                for extra in extra_logs
-            )
+            e2e_result = None
+            if not curr_test_checkpoint_only:
+                e2e_result = any(
+                    evaluate_e2e(PLAYGROUND_TESTS[curr_test_name].e2e, extra)
+                    for extra in extra_logs
+                )
 
             evaluated_tests.append(
                 EvaluatedTest(
@@ -560,10 +562,14 @@ def export_results(evaluated_tests: list[EvaluatedTest]):
         total_missing: list[GoldenLog] = []
 
         for evaluated_test in evaluated_tests:
+
             file.write(
                 evaluated_test.test_name
-                + " "
-                + ("pass" if evaluated_test.e2e_result else "fail")
+                + (
+                    ""
+                    if evaluated_test.e2e_result is None
+                    else " pass" if evaluated_test.e2e_result else " fail"
+                )
                 + "\n"
             )
             for evaluated_checkpoint in evaluated_test.checkpoints:
