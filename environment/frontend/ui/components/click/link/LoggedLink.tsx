@@ -3,17 +3,19 @@ import Link, { LinkProps } from "@mui/material/Link";
 
 export type LoggedLinkProps = LinkProps & {
   logLabel: string;
+  afterLog?: () => void;
 };
 
 export default function LoggedLink(props: LoggedLinkProps) {
-  const { logLabel, ...restProps } = props;
+  const { logLabel, afterLog, ...restProps } = props;
 
   return (
     <Link
       {...restProps}
       onClick={(event) => {
+        props.onClick?.(event);
         log({ component: "click/link", label: logLabel }).then(() => {
-          props.onClick?.(event);
+          if (afterLog) afterLog();
           if (props.href) navigate({ url: props.href });
         });
       }}

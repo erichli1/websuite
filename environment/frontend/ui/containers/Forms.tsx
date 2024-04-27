@@ -76,7 +76,7 @@ export function FormContainer(props: FormContainerProps) {
       <div>
         <LoggedButton
           logLabel={props.submitLabel}
-          onClick={() => {
+          afterLog={() => {
             if (props.dontLogSubmit)
               props.onSubmit?.(stringifyJsonSortKeys(formValues));
             else

@@ -5,10 +5,11 @@ import React from "react";
 export type LoggedIconButtonProps = IconButtonProps & {
   logLabel: string;
   icon: React.ReactNode;
+  afterLog?: () => void;
 };
 
 export default function LoggedIconButton(props: LoggedIconButtonProps) {
-  const { logLabel, icon, ...restProps } = props;
+  const { logLabel, afterLog, icon, ...restProps } = props;
 
   return (
     <IconButton
@@ -17,8 +18,9 @@ export default function LoggedIconButton(props: LoggedIconButtonProps) {
         "aria-label": restProps["aria-label"] ?? logLabel,
       }}
       onClick={(event) => {
+        props.onClick?.(event);
         log({ component: "click/iconbutton", label: logLabel }).then(() => {
-          props.onClick?.(event);
+          if (afterLog) afterLog();
         });
       }}
     >

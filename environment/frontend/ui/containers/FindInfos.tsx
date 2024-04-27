@@ -61,7 +61,7 @@ function PrometheusParagraph({
         <div>
           <LoggedButton
             variant="outlined"
-            onClick={() => {
+            afterLog={() => {
               setOpen(true);
             }}
             logLabel="Learn more about the Prometheus Project"

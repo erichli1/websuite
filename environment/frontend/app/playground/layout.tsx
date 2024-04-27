@@ -33,7 +33,7 @@ export default function PlaygroundLayout({
           logLabel="Search"
           icon={<Search />}
           color="inherit"
-          onClick={() => {
+          afterLog={() => {
             navigateTo({
               router,
               url: `/playground/search?query=${searchQuery}`,

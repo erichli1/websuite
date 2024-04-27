@@ -6,6 +6,7 @@ import { log } from "@/ui/log";
 export type LoggedMenuProps = MenuProps & {
   menuItems: Array<LoggedMenuItemProps>;
   handleClose: () => void;
+  afterLog?: () => void;
 };
 
 export type LoggedMenuItemProps = MenuItemProps & {
@@ -13,7 +14,7 @@ export type LoggedMenuItemProps = MenuItemProps & {
 };
 
 export default function LoggedMenu(props: LoggedMenuProps) {
-  const { menuItems, handleClose, ...restProps } = props;
+  const { menuItems, handleClose, afterLog, ...restProps } = props;
 
   return (
     <Menu
@@ -30,12 +31,14 @@ export default function LoggedMenu(props: LoggedMenuProps) {
             key={index}
             {...restMenuItemProps}
             onClick={(event) => {
+              menuItem.onClick?.(event);
+              handleClose();
+
               log({
                 component: "click/menu",
                 label: logLabel,
               }).then(() => {
-                menuItem.onClick?.(event);
-                handleClose();
+                if (afterLog) afterLog();
               });
             }}
           >

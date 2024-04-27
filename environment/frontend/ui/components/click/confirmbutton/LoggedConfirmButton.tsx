@@ -11,10 +11,12 @@ export type LoggedDialogButtonProps = {
   dialog: Omit<DialogProps, "open"> & { title: string };
   confirm: ButtonProps & { label: string };
   cancel: ButtonProps & { label: string };
+  afterLog?: () => void;
 };
 
 export default function LoggedConfirmButton(props: LoggedDialogButtonProps) {
-  const { logLabel, button, dialog, confirm, cancel, ...restProps } = props;
+  const { logLabel, afterLog, button, dialog, confirm, cancel, ...restProps } =
+    props;
   const { label: confirmLabel, ...restConfirmProps } = confirm;
   const { label: cancelLabel, ...restCancelProps } = cancel;
 
@@ -46,12 +48,14 @@ export default function LoggedConfirmButton(props: LoggedDialogButtonProps) {
           <Button
             {...restConfirmProps}
             onClick={(event) => {
+              confirm.onClick?.(event);
+              handleClose();
+
               log({
                 component: "click/confirmbutton",
                 label: logLabel,
               }).then(() => {
-                confirm.onClick?.(event);
-                handleClose();
+                if (afterLog) afterLog();
               });
             }}
           >

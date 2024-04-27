@@ -54,7 +54,7 @@ export default function Page({ params }: { params: { id: string } }) {
                 key={`${customization}-${option.name}`}
                 logLabel={`${option.name} (+${option.price.toFixed(2)})`}
                 variant="outlined"
-                onClick={() => {
+                afterLog={() => {
                   setSelectedCustomizations((prev) => ({
                     ...prev,
                     [customization]: option.name,
@@ -80,7 +80,7 @@ export default function Page({ params }: { params: { id: string } }) {
         <LoggedButton
           logLabel="Buy now"
           variant="contained"
-          onClick={() =>
+          afterLog={() =>
             navigateTo({
               router,
               url: `/playground/checkout?cart=${JSON.stringify({
