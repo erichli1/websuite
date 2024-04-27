@@ -16,6 +16,10 @@ from evaluation.evaluators import Log
 
 PARENT_FOLDER = os.path.join(os.path.dirname(__file__), "../")
 MAX_AGENT_TIME = 60
+LOG_FILEPATH = (
+    PARENT_FOLDER + "trajectories/log.txt"
+)  # needs to be in sync with environment/app.py
+OUTPUT_FILEPATH = PARENT_FOLDER + "output/e2e_output.txt"
 
 
 class GoldenLog(Log):
@@ -522,9 +526,9 @@ def evaluate_e2e(e2e: e2eTest, log: CheckpointFromLogs) -> bool:
 
 
 def evaluate_logs():
-    """Pulls the logs from trajectories/log.txt and then evaluates them against the golden checkpoints. Returns a list of EvaluatedTest objects."""
+    """Pulls the logs from LOG_FILEPATH and then evaluates them against the golden checkpoints. Returns a list of EvaluatedTest objects."""
     evaluated_tests = []
-    logs = generate_checkpoints_from_logs(PARENT_FOLDER + "trajectories/log.txt")
+    logs = generate_checkpoints_from_logs(LOG_FILEPATH)
     for test, checkpoints in logs.items():
         test_and_checkpoint = test.split("/")[1].strip().split(" ")
 
@@ -627,8 +631,8 @@ def update_summary(summary: dict, components: list, type: str):
 
 
 def export_results(evaluated_tests: list[EvaluatedTest]):
-    """Exports the results of the evaluated tests into output/e2e.txt"""
-    with open(PARENT_FOLDER + "output/e2e.txt", "w") as file:
+    """Exports the results of the evaluated tests into OUTPUT_FILEPATH"""
+    with open(OUTPUT_FILEPATH, "w") as file:
         total_correct: list[GoldenLog] = []
         total_missing: list[GoldenLog] = []
 
@@ -783,11 +787,11 @@ if __name__ == "__main__":
 
     # Run the agent
     if not skip_to_evaluate:
-        with open(PARENT_FOLDER + "trajectories/log.txt", "w") as file:
+        with open(LOG_FILEPATH, "w") as file:
             pass
 
         for test in tests:
-            with open(PARENT_FOLDER + "trajectories/log.txt", "a") as file:
+            with open(LOG_FILEPATH, "a") as file:
                 starting_checkpoint_str = (
                     test["starting_checkpoint"]
                     if test["starting_checkpoint"] is not None
@@ -802,14 +806,14 @@ if __name__ == "__main__":
                 file.write(f"NAVIGATE // {test['path']}\n")
 
             existing_lines = 0
-            with open(PARENT_FOLDER + "trajectories/log.txt", "r") as file:
+            with open(LOG_FILEPATH, "r") as file:
                 existing_lines = len(file.readlines())
 
             run_agent_with_limits(
                 goal=PLAYGROUND_TESTS[test["test"]].goal,
                 url=f"localhost:{LOCALHOST_PORT}" + test["path"],
                 existing_lines=existing_lines,
-                log_file=PARENT_FOLDER + "trajectories/log.txt",
+                log_file=LOG_FILEPATH,
                 timeout=MAX_AGENT_TIME,
                 addl_lines=100,
                 custom_log_break=(
@@ -829,7 +833,7 @@ if __name__ == "__main__":
                 ),
             )
 
-            with open(PARENT_FOLDER + "trajectories/log.txt", "a") as file:
+            with open(LOG_FILEPATH, "a") as file:
                 file.write("TEST FINISH\n")
 
     # Evaluate the logs that exist

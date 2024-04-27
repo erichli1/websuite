@@ -19,6 +19,10 @@ import time
 
 PARENT_FOLDER = os.path.join(os.path.dirname(__file__), "../")
 MAX_AGENT_TIME = 30  # seconds
+LOG_FILEPATH = (
+    PARENT_FOLDER + "trajectories/log.txt"
+)  # needs to be in sync with environment/app.py
+OUTPUT_FILEPATH = PARENT_FOLDER + "output/ind_output.txt"
 
 
 class Test:
@@ -556,33 +560,33 @@ if __name__ == "__main__":
 
     if not skip_to_evaluate:
         # Clear the log file
-        with open(PARENT_FOLDER + "trajectories/log.txt", "w") as file:
+        with open(LOG_FILEPATH, "w") as file:
             pass
 
         # Run the tests
         for tests, metadata in tests_and_metadatas:
             for test in tests:
-                with open(PARENT_FOLDER + "trajectories/log.txt", "a") as file:
+                with open(LOG_FILEPATH, "a") as file:
                     file.write(f"TEST BEGIN: {metadata[0]}/{metadata[1]} {test.name}\n")
 
                 existing_lines = 0
-                with open(PARENT_FOLDER + "trajectories/log.txt", "r") as file:
+                with open(LOG_FILEPATH, "r") as file:
                     existing_lines = len(file.readlines())
                 run_agent_with_limits(
                     goal=test.goal,
                     url=get_url(LOCALHOST_PORT, *metadata),
                     existing_lines=existing_lines,
-                    log_file=PARENT_FOLDER + "trajectories/log.txt",
+                    log_file=LOG_FILEPATH,
                     timeout=test.max_time,
                     addl_lines=test.max_lines,
                 )
 
-                with open(PARENT_FOLDER + "trajectories/log.txt", "a") as file:
+                with open(LOG_FILEPATH, "a") as file:
                     file.write("TEST FINISH\n")
 
     # Evaluate the log file
-    eval_dict = get_evals_dict(PARENT_FOLDER + "trajectories/log.txt")
-    with open(PARENT_FOLDER + "output/ind.txt", "w") as file:
+    eval_dict = get_evals_dict(LOG_FILEPATH)
+    with open(OUTPUT_FILEPATH, "w") as file:
         for key, items in eval_dict.items():
             logs = [Log(item) for item in items["logs"]]
             test, metadata = get_specific_test_and_metadata(*re.split(r"[ /]", key))
