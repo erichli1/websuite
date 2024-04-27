@@ -113,51 +113,60 @@ def generate_checkpoints_from_logs(filename: str) -> dict[str, list]:
     return full
 
 
-def check_log_file(
+def check_limits(
     process,
-    line_threshold: int,
     log_file: str,
+    line_threshold: int | None,
+    timeout: int | None = None,
     custom_log_break: Callable[[list[str]], bool] | None = None,
     custom_log_break_str: str | None = None,
 ):
+    start_time = time.time()
     while process.poll() is None:
+        if timeout is not None and time.time() - start_time > timeout:
+            process.terminate()
+            print("Process terminated due to timeout.")
+            return
+
         with open(log_file, "r") as file:
             lines = file.readlines()
-            if len(lines) >= line_threshold:
+            if line_threshold is not None and len(lines) >= line_threshold:
                 process.terminate()
                 print("Process terminated due to excess log entries.")
                 return
-            if custom_log_break and custom_log_break(lines):
+            if custom_log_break is not None and custom_log_break(lines):
                 process.terminate()
                 print(f"Process terminated due to: {custom_log_break_str}")
                 return
         time.sleep(1)
 
 
-def run_with_log_monitoring(
-    command: str,
-    line_threshold: int,
-    log_file: str,
-    custom_log_break: Callable[[list[str]], bool] | None = None,
-    custom_log_break_str: str | None = None,
-):
-    process = subprocess.Popen(command, shell=True)
+# def run_with_log_monitoring(
+#     command: str,
+#     line_threshold: int,
+#     log_file: str,
+#     custom_log_break: Callable[[list[str]], bool] | None = None,
+#     custom_log_break_str: str | None = None,
+#     timeout: int | None = None,
+# ):
+#     process = subprocess.Popen(command, shell=True)
 
-    # Start thread to monitor the log file
-    log_thread = threading.Thread(
-        target=check_log_file,
-        args=(
-            process,
-            line_threshold,
-            log_file,
-            custom_log_break,
-            custom_log_break_str,
-        ),
-    )
-    log_thread.start()
+#     # Start thread to monitor the log file
+#     log_thread = threading.Thread(
+#         target=check_log_file,
+#         args=(
+#             process,
+#             line_threshold,
+#             log_file,
+#             custom_log_break,
+#             custom_log_break_str,
+#             timeout,
+#         ),
+#     )
+#     log_thread.start()
 
-    process.wait()
-    log_thread.join()
+#     process.wait()
+#     log_thread.join()
 
 
 def run_agent_with_limits(
@@ -171,17 +180,32 @@ def run_agent_with_limits(
     custom_log_break_str: str | None = None,
 ):
     command = f"""python -m evaluation.agent "{goal}" "{url}" {timeout}"""
-    if addl_lines is not None:
+    # if addl_lines is not None:
+    if addl_lines:
         print(f"    Running with log line threshold of {addl_lines}")
-        if custom_log_break:
-            print(f"    Running with custom log break: {custom_log_break_str}")
-        run_with_log_monitoring(
-            command,
-            addl_lines + existing_lines,
+    if timeout:
+        print(f"    Running with timeout limit of {timeout}s")
+    if custom_log_break:
+        print(f"    Running with custom log break: {custom_log_break_str}")
+
+    process = subprocess.Popen(command, shell=True)
+
+    # Start thread to monitor the log file
+    log_thread = threading.Thread(
+        target=check_limits,
+        args=(
+            process,
             log_file,
+            (addl_lines + existing_lines) if addl_lines is not None else None,
+            timeout,
             custom_log_break,
             custom_log_break_str,
-        )
-    else:
-        process = subprocess.Popen(command, shell=True)
-        process.wait()
+        ),
+    )
+    log_thread.start()
+
+    process.wait()
+    log_thread.join()
+    # else:
+    #     process = subprocess.Popen(command, shell=True)
+    #     process.wait()
