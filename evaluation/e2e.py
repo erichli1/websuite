@@ -42,11 +42,13 @@ class GoldenCheckpoint(Checkpoint):
         golden_logs: list[GoldenLog],
         name: str,
         orderless_logs: bool = False,
+        full_match_verifier_next_checkpoint: str | None = None,
     ):
         super().__init__(url)
         self.golden_logs = golden_logs
         self.name = name
         self.orderless_logs = orderless_logs
+        self.full_match_verifier_next_checkpoint = full_match_verifier_next_checkpoint
 
 
 class EvaluatedGoldenCheckpoint(Checkpoint):
@@ -135,6 +137,7 @@ PLAYGROUND_TESTS: dict[str, PlaygroundTest] = {
                 "/playground/product/1",
                 [GoldenLog("click/button // Buy now")],
                 "purchase_item",
+                full_match_verifier_next_checkpoint='/playground/checkout?cart={"id":"1","customizations":{"memory":"8GB","storage":"512GB"},"price":1999}',
             ),
             GoldenCheckpoint(
                 "/playground/checkout?cart=[]",
@@ -152,6 +155,7 @@ PLAYGROUND_TESTS: dict[str, PlaygroundTest] = {
                 ],
                 "fill_shipping_info",
                 orderless_logs=True,
+                full_match_verifier_next_checkpoint='/playground/thanks?cart=[]&location={"city":"Cambridge","firstName":"John","lastName":"Doe","state":"MA","streetAddress":"123 Main Street","zipCode":"02138"}',
             ),
         ],
         e2e=e2eTest(
@@ -381,9 +385,26 @@ def compare_processed_and_golden_checkpoints(
                             missing_golden_logs.append(golden_logs[golden_logs_index])
                             golden_logs_index += 1
 
-            full_match = (
-                len(correct_golden_logs) == len(golden_logs) == len(processed_logs)
-            )
+            full_match = False
+            if (
+                golden_checkpoints[golden_index].full_match_verifier_next_checkpoint
+                is not None
+            ):
+                next_url = (
+                    ""
+                    if processed_index + 1 > len(processed_checkpoints)
+                    else processed_checkpoints[processed_index + 1].url
+                )
+                full_match = matching_urls(
+                    golden_checkpoints[
+                        golden_index
+                    ].full_match_verifier_next_checkpoint,
+                    next_url,
+                )
+            else:
+                full_match = (
+                    len(correct_golden_logs) == len(golden_logs) == len(processed_logs)
+                )
 
             evaluated_checkpoints.append(
                 EvaluatedGoldenCheckpoint(
