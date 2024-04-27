@@ -170,7 +170,7 @@ def run_agent_with_limits(
     custom_log_break: Callable[[list[str]], bool] | None = None,
     custom_log_break_str: str | None = None,
 ):
-    command = f"""python -m evaluation.agent "{goal}" {url} {timeout}"""
+    command = f"""python -m evaluation.agent "{goal}" "{url}" {timeout}"""
     if addl_lines is not None:
         print(f"    Running with log line threshold of {addl_lines}")
         if custom_log_break:

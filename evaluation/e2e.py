@@ -1,7 +1,7 @@
 import os
 from typing import Literal
 import sys
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import urlparse, parse_qs, urlencode
 import json
 
 from evaluation.utils import (
@@ -108,7 +108,7 @@ class CorrectMissingData:
 
 # TEST LIBRARY
 
-# Uses [...] in URL to indicate that the value is a placeholder (logic implemented in "matching_urls()")
+# Uses [...] in URL to specify that during evaluation, that string is a placeholder (logic implemented in "matching_urls()"). These brackets will be removed if running from a particular checkpoint.
 PLAYGROUND_TESTS: dict[str, PlaygroundTest] = {
     "order": PlaygroundTest(
         goal="Please order a MacBook Pro M3 chip without additional customizations to be delivered to John Doe at 123 Main Street, Cambridge, MA 02138",
@@ -125,7 +125,7 @@ PLAYGROUND_TESTS: dict[str, PlaygroundTest] = {
                 full_match_verifier_next_checkpoint="/playground/search?query=[]",
             ),
             GoldenCheckpoint(
-                "/playground/search?query=[]",
+                "/playground/search?query=[MacBook Pro M3 chip]",
                 [
                     GoldenLog(
                         "click/link // 2023 MacBook Pro - M3 chip, 14-inch",
@@ -141,7 +141,7 @@ PLAYGROUND_TESTS: dict[str, PlaygroundTest] = {
                 full_match_verifier_next_checkpoint='/playground/checkout?cart={"id":"1","customizations":{"memory":"8GB","storage":"512GB"},"price":1999}',
             ),
             GoldenCheckpoint(
-                url="/playground/checkout?cart=[]",
+                url='/playground/checkout?cart=[{"id":"1","customizations":{"memory":"8GB","storage":"512GB"},"price":1999}]',
                 golden_logs=[
                     GoldenLog("type/text // First name // John", "fill/complex"),
                     GoldenLog("type/text // Last name // Doe", "fill/complex"),
@@ -180,7 +180,7 @@ PLAYGROUND_TESTS: dict[str, PlaygroundTest] = {
             },
         ),
     ),
-    "add-custom-to-cart": PlaygroundTest(
+    "add_custom_to_cart": PlaygroundTest(
         goal="Please add a Macbook Pro with M3 Pro Chip to the cart with highest-tier customizations.",
         checkpoints=[
             GoldenCheckpoint(
@@ -193,7 +193,7 @@ PLAYGROUND_TESTS: dict[str, PlaygroundTest] = {
                 full_match_verifier_next_checkpoint="/playground/search?query=[]",
             ),
             GoldenCheckpoint(
-                url="/playground/search?query=[]",
+                url="/playground/search?query=[Macbook Pro M3 Pro Chip]",
                 golden_logs=[
                     GoldenLog(
                         "click/link // 2023 MacBook Pro - M3 Pro chip, 14-inch",
@@ -707,6 +707,21 @@ def export_results(evaluated_tests: list[EvaluatedTest]):
             file.write("".join(output))
 
 
+# MISC HELPERS
+
+
+def remove_placeholders_from_url_query_params(url: str):
+    parsed_url = urlparse(url)
+    parsed_query_raw = parse_qs(parsed_url.query)
+
+    parsed_query = {}
+    for key, value in parsed_query_raw.items():
+        if value[0].startswith("[") and value[0].endswith("]"):
+            parsed_query[key] = value[0][1:-1]
+
+    return parsed_url.path + "?" + urlencode(parsed_query)
+
+
 # E2E test scaffolding
 
 
@@ -743,7 +758,9 @@ if __name__ == "__main__":
                                 {
                                     "test": parts[0],
                                     "starting_checkpoint": parts[1],
-                                    "path": checkpoint.url,
+                                    "path": remove_placeholders_from_url_query_params(
+                                        checkpoint.url
+                                    ),
                                 }
                             )
                             break
