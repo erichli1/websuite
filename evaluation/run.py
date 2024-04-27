@@ -523,6 +523,10 @@ def get_all_tests_and_metadatas() -> list[TestsAndMetadata] | None:
     )
 
 
+def bool_to_pass_fail(b: bool) -> str:
+    return "pass" if b else "fail"
+
+
 ## RUNNING THE EVALUATION
 
 
@@ -578,16 +582,19 @@ if __name__ == "__main__":
 
     # Evaluate the log file
     eval_dict = get_evals_dict(PARENT_FOLDER + "trajectories/log.txt")
-    for key, items in eval_dict.items():
-        logs = [Log(item) for item in items["logs"]]
-        test, metadata = get_specific_test_and_metadata(*re.split(r"[ /]", key))
-        if test.submit_eval is not None:
-            submit_eval_result = (
-                test.submit_eval(Log(items["submit"]))
-                if items["submit"] is not None
-                else False
-            )
+    with open(PARENT_FOLDER + "output/ind.txt", "w") as file:
+        for key, items in eval_dict.items():
+            logs = [Log(item) for item in items["logs"]]
+            test, metadata = get_specific_test_and_metadata(*re.split(r"[ /]", key))
+            if test.submit_eval is not None:
+                submit_eval_result = (
+                    test.submit_eval(Log(items["submit"]))
+                    if items["submit"] is not None
+                    else False
+                )
 
-            print(f"{key}: process:{test.eval(logs)} submit:{submit_eval_result}")
-        else:
-            print(f"{key}: {test.eval(logs)}")
+                file.write(
+                    f"{key}: process:{bool_to_pass_fail(test.eval(logs))} submit:{bool_to_pass_fail(submit_eval_result)}\n"
+                )
+            else:
+                file.write(f"{key}: {bool_to_pass_fail(test.eval(logs))}\n")

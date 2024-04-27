@@ -625,8 +625,8 @@ def update_summary(summary: dict, components: list, type: str):
 
 
 def export_results(evaluated_tests: list[EvaluatedTest]):
-    """Exports the results of the evaluated tests into output/output.txt"""
-    with open(PARENT_FOLDER + "output/output.txt", "w") as file:
+    """Exports the results of the evaluated tests into output/e2e.txt"""
+    with open(PARENT_FOLDER + "output/e2e.txt", "w") as file:
         total_correct: list[GoldenLog] = []
         total_missing: list[GoldenLog] = []
 
