@@ -766,6 +766,15 @@ if __name__ == "__main__":
                             break
             else:
                 print(f"ERROR: unable to find test {parts[0]}")
+    else:
+        tests = [
+            {
+                "test": key,
+                "starting_checkpoint": None,
+                "path": "/playground",
+            }
+            for key in PLAYGROUND_TESTS.keys()
+        ]
 
     # Run the agent
     if not skip_to_evaluate:
