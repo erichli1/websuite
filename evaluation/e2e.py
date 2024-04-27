@@ -114,14 +114,15 @@ PLAYGROUND_TESTS: dict[str, PlaygroundTest] = {
         goal="Please order a MacBook Pro M3 chip without additional customizations to be delivered to John Doe at 123 Main Street, Cambridge, MA 02138",
         checkpoints=[
             GoldenCheckpoint(
-                "/playground",
-                [
+                url="/playground",
+                golden_logs=[
                     GoldenLog(
                         "type/text // Search items",
                     ),
                     GoldenLog("click/iconbutton // Search"),
                 ],
-                "search_for_item",
+                name="search_for_item",
+                full_match_verifier_next_checkpoint="/playground/search?query=[]",
             ),
             GoldenCheckpoint(
                 "/playground/search?query=[]",
@@ -134,14 +135,14 @@ PLAYGROUND_TESTS: dict[str, PlaygroundTest] = {
                 "select_item_from_search",
             ),
             GoldenCheckpoint(
-                "/playground/product/1",
-                [GoldenLog("click/button // Buy now")],
-                "purchase_item",
+                url="/playground/product/1",
+                golden_logs=[GoldenLog("click/button // Buy now")],
+                name="purchase_item",
                 full_match_verifier_next_checkpoint='/playground/checkout?cart={"id":"1","customizations":{"memory":"8GB","storage":"512GB"},"price":1999}',
             ),
             GoldenCheckpoint(
-                "/playground/checkout?cart=[]",
-                [
+                url="/playground/checkout?cart=[]",
+                golden_logs=[
                     GoldenLog("type/text // First name // John", "fill/complex"),
                     GoldenLog("type/text // Last name // Doe", "fill/complex"),
                     GoldenLog(
@@ -153,14 +154,14 @@ PLAYGROUND_TESTS: dict[str, PlaygroundTest] = {
                     GoldenLog("type/text // Zip code // 02138", "fill/complex"),
                     GoldenLog("click/button // Order", "fill/complex"),
                 ],
-                "fill_shipping_info",
+                name="fill_shipping_info",
                 orderless_logs=True,
                 full_match_verifier_next_checkpoint='/playground/thanks?cart=[]&location={"city":"Cambridge","firstName":"John","lastName":"Doe","state":"MA","streetAddress":"123 Main Street","zipCode":"02138"}',
             ),
         ],
         e2e=e2eTest(
-            "/playground/thanks",
-            {
+            path="/playground/thanks",
+            params={
                 "cart": {
                     "customizations": {
                         "memory": "8GB",
@@ -178,7 +179,54 @@ PLAYGROUND_TESTS: dict[str, PlaygroundTest] = {
                 },
             },
         ),
-    )
+    ),
+    "add-custom-to-cart": PlaygroundTest(
+        goal="Please add a Macbook Pro with M3 Pro Chip to the cart with highest-tier customizations.",
+        checkpoints=[
+            GoldenCheckpoint(
+                url="/playground",
+                golden_logs=[
+                    GoldenLog("type/text // Search items"),
+                    GoldenLog("click/iconbutton // Search"),
+                ],
+                name="search_for_item",
+                full_match_verifier_next_checkpoint="/playground/search?query=[]",
+            ),
+            GoldenCheckpoint(
+                url="/playground/search?query=[]",
+                golden_logs=[
+                    GoldenLog(
+                        "click/link // 2023 MacBook Pro - M3 Pro chip, 14-inch",
+                        "search/appropriate",
+                    )
+                ],
+                name="select_item_from_search",
+            ),
+            GoldenCheckpoint(
+                url="/playground/product/2",
+                golden_logs=[
+                    GoldenLog("click/button // 36GB (+400.00)"),
+                    GoldenLog("click/button // 2TB (+600.00)"),
+                ],
+                name="select_customizations",
+                orderless_logs=True,
+                full_match_verifier_next_checkpoint='/playground/checkout?cart={"id":"2","customizations":{"memory":"36GB","storage":"2TB"},"price":2999}',
+            ),
+        ],
+        e2e=e2eTest(
+            path="/playground/checkout",
+            params={
+                "cart": {
+                    "customizations": {
+                        "memory": "36GB",
+                        "storage": "2TB",
+                    },
+                    "id": "2",
+                    "price": 2999,
+                }
+            },
+        ),
+    ),
 }
 
 # EVALUATING THE TRAJECTORIES
@@ -392,7 +440,7 @@ def compare_processed_and_golden_checkpoints(
             ):
                 next_url = (
                     ""
-                    if processed_index + 1 > len(processed_checkpoints)
+                    if processed_index + 1 >= len(processed_checkpoints)
                     else processed_checkpoints[processed_index + 1].url
                 )
                 full_match = matching_urls(
