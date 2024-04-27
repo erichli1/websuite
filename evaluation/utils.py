@@ -141,34 +141,6 @@ def check_limits(
         time.sleep(1)
 
 
-# def run_with_log_monitoring(
-#     command: str,
-#     line_threshold: int,
-#     log_file: str,
-#     custom_log_break: Callable[[list[str]], bool] | None = None,
-#     custom_log_break_str: str | None = None,
-#     timeout: int | None = None,
-# ):
-#     process = subprocess.Popen(command, shell=True)
-
-#     # Start thread to monitor the log file
-#     log_thread = threading.Thread(
-#         target=check_log_file,
-#         args=(
-#             process,
-#             line_threshold,
-#             log_file,
-#             custom_log_break,
-#             custom_log_break_str,
-#             timeout,
-#         ),
-#     )
-#     log_thread.start()
-
-#     process.wait()
-#     log_thread.join()
-
-
 def run_agent_with_limits(
     goal: str,
     url: str,
@@ -179,7 +151,7 @@ def run_agent_with_limits(
     custom_log_break: Callable[[list[str]], bool] | None = None,
     custom_log_break_str: str | None = None,
 ):
-    command = f"""python -m evaluation.agent "{goal}" "{url}" {timeout}"""
+    command = f"""python -m evaluation.agent "{goal}" "{url}" """
     # if addl_lines is not None:
     if addl_lines:
         print(f"    Running with log line threshold of {addl_lines}")
