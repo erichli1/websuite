@@ -142,7 +142,7 @@ PLAYGROUND_TESTS: dict[str, PlaygroundTest] = {
                 url="/playground/product/1",
                 golden_logs=[GoldenLog("click/button // Buy now")],
                 name="purchase_item",
-                full_match_verifier_next_checkpoint='/playground/checkout?cart={"id":"1","customizations":{"memory":"8GB","storage":"512GB"},"price":1999}',
+                full_match_verifier_next_checkpoint='/playground/checkout?cart={"id":"1","customizations":{"memory":"8GB","storage":"512GB"},"price":1599}',
             ),
             GoldenCheckpoint(
                 url='/playground/checkout?cart=[{"id":"1","customizations":{"memory":"8GB","storage":"512GB"},"price":1999}]',
