@@ -561,14 +561,16 @@ def evaluate_logs():
                 golden_checkpoints = golden_checkpoints[:1]
                 processed_checkpoints = processed_checkpoints[:1]
 
-            evaluated_logs, extra_logs = compare_processed_and_golden_checkpoints(
-                golden_checkpoints, processed_checkpoints
+            evaluated_checkpoints, extra_checkpoints = (
+                compare_processed_and_golden_checkpoints(
+                    golden_checkpoints, processed_checkpoints
+                )
             )
 
             all_correct_logs: list[GoldenLog] = []
             all_missing_logs: list[GoldenLog] = []
 
-            for evaluated_checkpoint in evaluated_logs:
+            for evaluated_checkpoint in evaluated_checkpoints:
                 all_correct_logs.extend(evaluated_checkpoint.correct_golden_logs)
                 all_missing_logs.extend(evaluated_checkpoint.missing_golden_logs)
 
@@ -579,16 +581,16 @@ def evaluate_logs():
             if not curr_test_checkpoint_only:
                 e2e_result = any(
                     evaluate_e2e(PLAYGROUND_TESTS[curr_test_name].e2e, extra)
-                    for extra in extra_logs
+                    for extra in extra_checkpoints
                 )
 
             evaluated_tests.append(
                 EvaluatedTest(
                     test_name=test,
-                    checkpoints=evaluated_logs,
+                    checkpoints=evaluated_checkpoints,
                     correct_logs=all_correct_logs,
                     missing_logs=all_missing_logs,
-                    extra_checkpoints_processed=extra_logs,
+                    extra_checkpoints_processed=extra_checkpoints,
                     e2e_result=e2e_result,
                 )
             )
@@ -652,6 +654,9 @@ def export_results(evaluated_tests: list[EvaluatedTest]):
 
                 total_correct.extend(evaluated_checkpoint.correct_golden_logs)
                 total_missing.extend(evaluated_checkpoint.missing_golden_logs)
+
+            for extra_checkpoint in evaluated_test.extra_checkpoints_processed:
+                file.write("    EXTRA: " + extra_checkpoint.url + "\n")
 
         file.write("\n\n")
 
