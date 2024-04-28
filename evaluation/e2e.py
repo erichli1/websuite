@@ -7,6 +7,8 @@ import json
 from evaluation.utils import (
     LOCALHOST_PORT,
     TASK_TO_CATEGORY_MAP,
+    PassStats,
+    display_pass_stats,
     generate_checkpoints_from_logs,
     run_agent_with_limits,
 )
@@ -53,6 +55,18 @@ class GoldenCheckpoint(Checkpoint):
         self.name = name
         self.orderless_logs = orderless_logs
         self.full_match_verifier_next_checkpoint = full_match_verifier_next_checkpoint
+
+
+class CheckpointMatchStats:
+    def __init__(self):
+        self.full_match = 0
+        self.partial_match = 0
+        self.missing = 0
+
+    def __str__(self):
+        total = self.full_match + self.partial_match + self.missing
+
+        return f"full_match ({self.full_match}/{total}), partial_match ({self.partial_match}/{total}), missing ({self.missing}/{total})"
 
 
 class EvaluatedGoldenCheckpoint(Checkpoint):
@@ -616,10 +630,6 @@ def evaluate_logs():
 # GENERATING SUMMARY AND EXPORTING RESULTS
 
 
-def get_summary_line(text: str, correct: int, missing: int):
-    return f"{text}: {correct}/{correct + missing} ({round(correct * 100 / (correct + missing))}%)\n"
-
-
 def update_summary(summary: dict, components: list, type: str):
     """Given the summary dictionary, it updates according to the list of components (from logs) and type of list (either correct or missing)"""
     for component in components:
@@ -642,22 +652,6 @@ def update_summary(summary: dict, components: list, type: str):
             summary[category][task][test].missing += 1
 
 
-class CheckpointMatchStats:
-    def __init__(self):
-        self.full_match = 0
-        self.partial_match = 0
-        self.missing = 0
-
-    def __str__(self):
-        total = self.full_match + self.partial_match + self.missing
-
-        return f"full_match ({self.full_match}/{total}), partial_match ({self.partial_match}/{total}), missing ({self.missing}/{total})"
-
-
-def get_pass_stats(pass_count: int, fail_count: int):
-    return f"{pass_count}/{pass_count + fail_count} ({round(pass_count * 100 / (pass_count + fail_count))}%)"
-
-
 def export_results(evaluated_tests: list[EvaluatedTest]):
     """Exports the results of the evaluated tests into OUTPUT_FILEPATH"""
     with open(OUTPUT_FILEPATH, "w") as file:
@@ -665,9 +659,7 @@ def export_results(evaluated_tests: list[EvaluatedTest]):
         total_missing: list[GoldenLog] = []
 
         for evaluated_test in evaluated_tests:
-            evaluated_e2e = False
-            e2e_pass = 0
-            e2e_fail = 0
+            e2e_stats = None
 
             extra_checkpoints_str = ""
 
@@ -677,11 +669,13 @@ def export_results(evaluated_tests: list[EvaluatedTest]):
                 evaluated_test.ind_evaluated_tests
             ):
                 if ind_evaluated_test.e2e_result is not None:
-                    evaluated_e2e = True
+                    if e2e_stats is None:
+                        e2e_stats = PassStats()
+
                     if ind_evaluated_test.e2e_result:
-                        e2e_pass += 1
+                        e2e_stats.pass_count += 1
                     else:
-                        e2e_fail += 1
+                        e2e_stats.fail_count += 1
 
                 for evaluated_checkpoint in ind_evaluated_test.checkpoints:
                     if evaluated_checkpoint.name not in evaluated_checkpoints_to_print:
@@ -714,8 +708,13 @@ def export_results(evaluated_tests: list[EvaluatedTest]):
                 evaluated_test.test_name
                 + (
                     ""
-                    if not evaluated_e2e
-                    else (" pass " + get_pass_stats(e2e_pass, e2e_fail))
+                    if e2e_stats is None
+                    else (
+                        " pass "
+                        + display_pass_stats(
+                            e2e_stats.pass_count, e2e_stats.fail_count, True
+                        )
+                    )
                 )
                 + "\n"
             )
@@ -758,21 +757,32 @@ def export_results(evaluated_tests: list[EvaluatedTest]):
                     test_missing = summary[category][task][test].missing
 
                     output.append(
-                        get_summary_line("        " + test, test_correct, test_missing)
+                        "        "
+                        + test
+                        + ": "
+                        + display_pass_stats(test_correct, test_missing, True)
+                        + "\n"
                     )
 
                     task_correct += test_correct
                     task_missing += test_missing
 
                 output.append(
-                    get_summary_line("    " + task, task_correct, task_missing)
+                    "    "
+                    + task
+                    + ": "
+                    + display_pass_stats(task_correct, task_missing, True)
+                    + "\n"
                 )
 
                 category_correct += task_correct
                 category_missing += task_missing
 
             output.append(
-                get_summary_line(category, category_correct, category_missing)
+                category
+                + ": "
+                + display_pass_stats(category_correct, category_missing, True)
+                + "\n"
             )
 
             output.reverse()

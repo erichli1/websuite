@@ -5,6 +5,8 @@ import re
 from evaluation.evaluators import Eval as eval, Log
 from evaluation.utils import (
     LOCALHOST_PORT,
+    PassStats,
+    display_pass_stats,
     flatten,
     get_evals_dict,
     get_url,
@@ -535,13 +537,13 @@ def calc_pass_stats(pass_count: int, total_count: int) -> str:
 ## RUNNING THE EVALUATION
 
 
-class PassStats:
-    def __init__(self):
-        self.pass_count = 0
-        self.total_count = 0
-        self.track_process = False
-        self.process_pass_count = 0
-        self.process_total_count = 0
+# class PassStats:
+#     def __init__(self):
+#         self.pass_count = 0
+#         self.total_count = 0
+#         self.track_process = False
+#         self.process_pass_count = 0
+#         self.process_total_count = 0
 
 
 if __name__ == "__main__":
@@ -607,18 +609,21 @@ if __name__ == "__main__":
     eval_dict = get_evals_dict(LOG_FILEPATH)
     with open(OUTPUT_FILEPATH, "w") as file:
         for key, items in eval_dict.items():
-            pass_stats = PassStats()
+            basic_stats = PassStats()
+            process_stats = None
 
             for item in items:
                 logs = [Log(log) for log in item["logs"]]
                 test, metadata = get_specific_test_and_metadata(*re.split(r"[ /]", key))
 
-                pass_stats.total_count += 1
                 if test.eval(logs):
-                    pass_stats.pass_count += 1
+                    basic_stats.pass_count += 1
+                else:
+                    basic_stats.fail_count += 1
 
                 if test.submit_eval is not None:
-                    pass_stats.track_process = True
+                    if process_stats is None:
+                        process_stats = PassStats()
 
                     submit_eval_result = (
                         test.submit_eval(Log(item["submit"]))
@@ -626,15 +631,16 @@ if __name__ == "__main__":
                         else False
                     )
 
-                    pass_stats.process_total_count += 1
                     if submit_eval_result:
-                        pass_stats.process_pass_count += 1
+                        process_stats.pass_count += 1
+                    else:
+                        process_stats.fail_count += 1
 
-            if pass_stats.track_process:
+            if process_stats is not None:
                 file.write(
-                    f"{key}: process: pass {calc_pass_stats(pass_stats.process_pass_count, pass_stats.process_total_count)} submit: pass {calc_pass_stats(pass_stats.pass_count, pass_stats.total_count)}\n"
+                    f"{key}: process: pass {display_pass_stats(process_stats.pass_count, process_stats.fail_count, True)} submit: pass {display_pass_stats(basic_stats.pass_count, basic_stats.fail_count, True)}\n"
                 )
             else:
                 file.write(
-                    f"{key}: pass {calc_pass_stats(pass_stats.pass_count, pass_stats.total_count)}\n"
+                    f"{key}: pass {display_pass_stats(basic_stats.pass_count, basic_stats.fail_count, True)}\n"
                 )

@@ -194,3 +194,24 @@ def run_agent_with_limits(
     # else:
     #     process = subprocess.Popen(command, shell=True)
     #     process.wait()
+
+
+class PassStats:
+    def __init__(self):
+        self.pass_count = 0
+        self.fail_count = 0
+
+
+def display_pass_stats(
+    pass_count: int, fail_count: int, include_percentage: bool = False
+):
+    output = ""
+    total = pass_count + fail_count
+
+    output += f"{pass_count}/{total}"
+
+    if include_percentage:
+        pass_percentage = round((pass_count / total) * 100)
+        output += f" ({pass_percentage}%)"
+
+    return output
