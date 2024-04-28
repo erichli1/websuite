@@ -1,3 +1,4 @@
+import csv
 import os
 from typing import Literal
 import sys
@@ -21,7 +22,9 @@ MAX_AGENT_TIME = 60
 LOG_FILEPATH = (
     PARENT_FOLDER + "trajectories/log.txt"
 )  # needs to be in sync with environment/app.py
-OUTPUT_FILEPATH = PARENT_FOLDER + "output/e2e_output.txt"
+OUTPUT_FILEPATH = PARENT_FOLDER + "output/e2e_output.csv"
+TASK_OUTPUT_FILEPATH = PARENT_FOLDER + "output/e2e_task_output.csv"
+SUMMARY_FILEPATH = PARENT_FOLDER + "output/e2e_summary.txt"
 
 
 class GoldenLog(Log):
@@ -653,140 +656,198 @@ def update_summary(summary: dict, components: list, type: str):
 
 
 def export_results(evaluated_tests: list[EvaluatedTest]):
-    """Exports the results of the evaluated tests into OUTPUT_FILEPATH"""
-    with open(OUTPUT_FILEPATH, "w") as file:
-        total_correct: list[GoldenLog] = []
-        total_missing: list[GoldenLog] = []
+    """Exports the overall results into SUMMARY_FILEPATH, checkpoint results into OUTPUT_FILEPATH, and task results into TASK_OUTPUT_FILEPATH."""
+    summary_str = ""
+    output_csv_rows = [
+        [
+            "Test",
+            "E2E Pass Count",
+            "E2E Total Count",
+            "Checkpoint",
+            "Checkpoint Full Match",
+            "Checkpoint Partial Match",
+            "Checkpoint Missing",
+            "Checkpoint Total Count",
+        ]
+    ]
+    task_output_csv_rows = [["Category", "Task", "Test", "Correct", "Total"]]
 
-        for evaluated_test in evaluated_tests:
-            e2e_stats = None
+    total_correct: list[GoldenLog] = []
+    total_missing: list[GoldenLog] = []
 
-            extra_checkpoints_str = ""
+    for evaluated_test in evaluated_tests:
+        e2e_stats = None
 
-            evaluated_checkpoints_to_print: dict[str, CheckpointMatchStats] = {}
+        extra_checkpoints_str = ""
 
-            for index, ind_evaluated_test in enumerate(
-                evaluated_test.ind_evaluated_tests
-            ):
-                if ind_evaluated_test.e2e_result is not None:
-                    if e2e_stats is None:
-                        e2e_stats = PassStats()
+        evaluated_checkpoints_to_print: dict[str, CheckpointMatchStats] = {}
 
-                    if ind_evaluated_test.e2e_result:
-                        e2e_stats.pass_count += 1
-                    else:
-                        e2e_stats.fail_count += 1
+        for index, ind_evaluated_test in enumerate(evaluated_test.ind_evaluated_tests):
+            if ind_evaluated_test.e2e_result is not None:
+                if e2e_stats is None:
+                    e2e_stats = PassStats()
 
-                for evaluated_checkpoint in ind_evaluated_test.checkpoints:
-                    if evaluated_checkpoint.name not in evaluated_checkpoints_to_print:
-                        evaluated_checkpoints_to_print[evaluated_checkpoint.name] = (
-                            CheckpointMatchStats()
-                        )
+                if ind_evaluated_test.e2e_result:
+                    e2e_stats.pass_count += 1
+                else:
+                    e2e_stats.fail_count += 1
 
-                    if evaluated_checkpoint.checkpoint_status == "full_match":
-                        evaluated_checkpoints_to_print[
-                            evaluated_checkpoint.name
-                        ].full_match += 1
-                    elif evaluated_checkpoint.checkpoint_status == "partial_match":
-                        evaluated_checkpoints_to_print[
-                            evaluated_checkpoint.name
-                        ].partial_match += 1
-                    elif evaluated_checkpoint.checkpoint_status == "missing":
-                        evaluated_checkpoints_to_print[
-                            evaluated_checkpoint.name
-                        ].missing += 1
-
-                    total_correct.extend(evaluated_checkpoint.correct_golden_logs)
-                    total_missing.extend(evaluated_checkpoint.missing_golden_logs)
-
-                for extra_checkpoint in ind_evaluated_test.extra_checkpoints_processed:
-                    extra_checkpoints_str += (
-                        "    EXTRA (" + str(index) + "): " + extra_checkpoint.url + "\n"
+            for evaluated_checkpoint in ind_evaluated_test.checkpoints:
+                if evaluated_checkpoint.name not in evaluated_checkpoints_to_print:
+                    evaluated_checkpoints_to_print[evaluated_checkpoint.name] = (
+                        CheckpointMatchStats()
                     )
 
-            file.write(
-                evaluated_test.test_name
-                + (
-                    ""
-                    if e2e_stats is None
-                    else (
-                        " pass "
-                        + display_pass_stats(
-                            e2e_stats.pass_count, e2e_stats.fail_count, True
-                        )
+                if evaluated_checkpoint.checkpoint_status == "full_match":
+                    evaluated_checkpoints_to_print[
+                        evaluated_checkpoint.name
+                    ].full_match += 1
+                elif evaluated_checkpoint.checkpoint_status == "partial_match":
+                    evaluated_checkpoints_to_print[
+                        evaluated_checkpoint.name
+                    ].partial_match += 1
+                elif evaluated_checkpoint.checkpoint_status == "missing":
+                    evaluated_checkpoints_to_print[
+                        evaluated_checkpoint.name
+                    ].missing += 1
+
+                total_correct.extend(evaluated_checkpoint.correct_golden_logs)
+                total_missing.extend(evaluated_checkpoint.missing_golden_logs)
+
+            for extra_checkpoint in ind_evaluated_test.extra_checkpoints_processed:
+                extra_checkpoints_str += (
+                    "    EXTRA (" + str(index) + "): " + extra_checkpoint.url + "\n"
+                )
+
+        summary_str += (
+            evaluated_test.test_name
+            + (
+                ""
+                if e2e_stats is None
+                else (
+                    " pass "
+                    + display_pass_stats(
+                        e2e_stats.pass_count, e2e_stats.fail_count, True
                     )
                 )
-                + "\n"
+            )
+            + "\n"
+        )
+
+        for checkpoint_name, stats in evaluated_checkpoints_to_print.items():
+            summary_str += "    " + checkpoint_name + " " + str(stats) + "\n"
+
+        summary_str += extra_checkpoints_str
+
+        output_csv_rows.append(
+            [
+                evaluated_test.test_name,
+                e2e_stats.pass_count if e2e_stats is not None else 0,
+                (
+                    e2e_stats.pass_count + e2e_stats.fail_count
+                    if e2e_stats is not None
+                    else 0
+                ),
+            ]
+        )
+
+        for checkpoint_name, stats in evaluated_checkpoints_to_print.items():
+            output_csv_rows.append(
+                [
+                    evaluated_test.test_name,
+                    "",
+                    "",
+                    checkpoint_name,
+                    stats.full_match,
+                    stats.partial_match,
+                    stats.missing,
+                    stats.full_match + stats.partial_match + stats.missing,
+                ]
             )
 
-            for checkpoint_name, stats in evaluated_checkpoints_to_print.items():
-                file.write("    " + checkpoint_name + " " + str(stats) + "\n")
+    summary_str += "\n\n"
 
-            file.write(extra_checkpoints_str)
+    total_correct_components = []
+    total_missing_components = []
+    for correct in total_correct:
+        total_correct_components.append(correct.component)
+        if correct.untracked_component is not None:
+            total_correct_components.append(correct.untracked_component)
+    for missing in total_missing:
+        total_missing_components.append(missing.component)
+        if missing.untracked_component is not None:
+            total_missing_components.append(missing.untracked_component)
 
-        file.write("\n\n")
+    summary: dict[str, dict[str, dict[str, CorrectMissingData]]] = {}
+    update_summary(summary, total_correct_components, "correct")
+    update_summary(summary, total_missing_components, "missing")
 
-        total_correct_components = []
-        total_missing_components = []
-        for correct in total_correct:
-            total_correct_components.append(correct.component)
-            if correct.untracked_component is not None:
-                total_correct_components.append(correct.untracked_component)
-        for missing in total_missing:
-            total_missing_components.append(missing.component)
-            if missing.untracked_component is not None:
-                total_missing_components.append(missing.untracked_component)
+    for category in summary:
+        category_summary_output_list = []
 
-        summary: dict[str, dict[str, dict[str, CorrectMissingData]]] = {}
+        category_correct = 0
+        category_missing = 0
 
-        update_summary(summary, total_correct_components, "correct")
-        update_summary(summary, total_missing_components, "missing")
+        for task in summary[category]:
+            task_correct = 0
+            task_missing = 0
 
-        for category in summary:
-            output = []
+            for test in summary[category][task]:
+                test_correct = summary[category][task][test].correct
+                test_missing = summary[category][task][test].missing
 
-            category_correct = 0
-            category_missing = 0
+                task_output_csv_rows.append(
+                    [
+                        category,
+                        task,
+                        test,
+                        test_correct,
+                        test_correct + test_missing,
+                    ]
+                )
 
-            for task in summary[category]:
-                task_correct = 0
-                task_missing = 0
-
-                for test in summary[category][task]:
-                    test_correct = summary[category][task][test].correct
-                    test_missing = summary[category][task][test].missing
-
-                    output.append(
-                        "        "
-                        + test
-                        + ": "
-                        + display_pass_stats(test_correct, test_missing, True)
-                        + "\n"
-                    )
-
-                    task_correct += test_correct
-                    task_missing += test_missing
-
-                output.append(
-                    "    "
-                    + task
+                category_summary_output_list.append(
+                    "        "
+                    + test
                     + ": "
-                    + display_pass_stats(task_correct, task_missing, True)
+                    + display_pass_stats(test_correct, test_missing, True)
                     + "\n"
                 )
 
-                category_correct += task_correct
-                category_missing += task_missing
+                task_correct += test_correct
+                task_missing += test_missing
 
-            output.append(
-                category
+            category_summary_output_list.append(
+                "    "
+                + task
                 + ": "
-                + display_pass_stats(category_correct, category_missing, True)
+                + display_pass_stats(task_correct, task_missing, True)
                 + "\n"
             )
 
-            output.reverse()
-            file.write("".join(output))
+            category_correct += task_correct
+            category_missing += task_missing
+
+        category_summary_output_list.append(
+            category
+            + ": "
+            + display_pass_stats(category_correct, category_missing, True)
+            + "\n"
+        )
+
+        category_summary_output_list.reverse()
+        summary_str += "".join(category_summary_output_list)
+
+    with open(OUTPUT_FILEPATH, "w", newline="") as csv_file:
+        csv_writer = csv.writer(csv_file)
+        csv_writer.writerows(output_csv_rows)
+
+    with open(TASK_OUTPUT_FILEPATH, "w", newline="") as csv_file:
+        csv_writer = csv.writer(csv_file)
+        csv_writer.writerows(task_output_csv_rows)
+
+    with open(SUMMARY_FILEPATH, "w") as file:
+        file.write(summary_str)
 
 
 # MISC HELPERS

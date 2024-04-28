@@ -1,3 +1,4 @@
+import csv
 from typing import Any, Callable, Dict, TypeAlias
 import sys
 import os
@@ -5,6 +6,7 @@ import re
 from evaluation.evaluators import Eval as eval, Log
 from evaluation.utils import (
     LOCALHOST_PORT,
+    TASK_TO_CATEGORY_MAP,
     PassStats,
     display_pass_stats,
     flatten,
@@ -21,7 +23,8 @@ MAX_AGENT_TIME = 30  # seconds
 LOG_FILEPATH = (
     PARENT_FOLDER + "trajectories/log.txt"
 )  # needs to be in sync with environment/app.py
-OUTPUT_FILEPATH = PARENT_FOLDER + "output/ind_output.txt"
+OUTPUT_FILEPATH = PARENT_FOLDER + "output/ind_output.csv"
+SUMMARY_FILEPATH = PARENT_FOLDER + "output/ind_summary.txt"
 
 
 class Test:
@@ -607,40 +610,86 @@ if __name__ == "__main__":
 
     # Evaluate the log file
     eval_dict = get_evals_dict(LOG_FILEPATH)
-    with open(OUTPUT_FILEPATH, "w") as file:
-        for key, items in eval_dict.items():
-            basic_stats = PassStats()
-            process_stats = None
+    output_csv_rows = [
+        [
+            "Category",
+            "Task",
+            "Test",
+            "Version",
+            "Pass Count",
+            "Total Count",
+            "Process Pass Count",
+            "Process Total Count",
+        ]
+    ]
+    summary_str = ""
 
-            for item in items:
-                logs = [Log(log) for log in item["logs"]]
-                test, metadata = get_specific_test_and_metadata(*re.split(r"[ /]", key))
+    for key, items in eval_dict.items():
+        basic_stats = PassStats()
+        process_stats = None
 
-                if test.eval(logs):
-                    basic_stats.pass_count += 1
-                else:
-                    basic_stats.fail_count += 1
+        for item in items:
+            logs = [Log(log) for log in item["logs"]]
+            test, metadata = get_specific_test_and_metadata(*re.split(r"[ /]", key))
 
-                if test.submit_eval is not None:
-                    if process_stats is None:
-                        process_stats = PassStats()
-
-                    submit_eval_result = (
-                        test.submit_eval(Log(item["submit"]))
-                        if item["submit"] is not None
-                        else False
-                    )
-
-                    if submit_eval_result:
-                        process_stats.pass_count += 1
-                    else:
-                        process_stats.fail_count += 1
-
-            if process_stats is not None:
-                file.write(
-                    f"{key}: process: pass {display_pass_stats(process_stats.pass_count, process_stats.fail_count, True)} submit: pass {display_pass_stats(basic_stats.pass_count, basic_stats.fail_count, True)}\n"
-                )
+            if test.eval(logs):
+                basic_stats.pass_count += 1
             else:
-                file.write(
-                    f"{key}: pass {display_pass_stats(basic_stats.pass_count, basic_stats.fail_count, True)}\n"
+                basic_stats.fail_count += 1
+
+            if test.submit_eval is not None:
+                if process_stats is None:
+                    process_stats = PassStats()
+
+                submit_eval_result = (
+                    test.submit_eval(Log(item["submit"]))
+                    if item["submit"] is not None
+                    else False
                 )
+
+                if submit_eval_result:
+                    process_stats.pass_count += 1
+                else:
+                    process_stats.fail_count += 1
+
+        split_key = key.split("/")
+        split_test = split_key[1].split(" ")
+
+        task = split_key[0]
+        category = TASK_TO_CATEGORY_MAP[task]
+        test = split_test[0]
+        version = split_test[1]
+
+        if process_stats is not None:
+            summary_str += f"{key}: process: pass {display_pass_stats(process_stats.pass_count, process_stats.fail_count, True)} submit: pass {display_pass_stats(basic_stats.pass_count, basic_stats.fail_count, True)}\n"
+            output_csv_rows.append(
+                [
+                    category,
+                    task,
+                    test,
+                    version,
+                    basic_stats.pass_count,
+                    basic_stats.fail_count + basic_stats.pass_count,
+                    process_stats.pass_count,
+                    process_stats.fail_count + process_stats.pass_count,
+                ]
+            )
+        else:
+            summary_str += f"{key}: pass {display_pass_stats(basic_stats.pass_count, basic_stats.fail_count, True)}\n"
+            output_csv_rows.append(
+                [
+                    category,
+                    task,
+                    test,
+                    version,
+                    basic_stats.pass_count,
+                    basic_stats.fail_count + basic_stats.pass_count,
+                ]
+            )
+
+    with open(OUTPUT_FILEPATH, "w", newline="") as csv_file:
+        csv_writer = csv.writer(csv_file)
+        csv_writer.writerows(output_csv_rows)
+
+    with open(SUMMARY_FILEPATH, "w") as file:
+        file.write(summary_str)
