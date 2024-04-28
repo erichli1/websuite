@@ -86,22 +86,30 @@ class PlaygroundTest:
         self.e2e = e2e
 
 
-class EvaluatedTest:
+class IndEvaluatedTest:
     def __init__(
         self,
-        test_name: str,
         checkpoints: list[EvaluatedGoldenCheckpoint],
         correct_logs: list[GoldenLog],
         missing_logs: list[GoldenLog],
         extra_checkpoints_processed: list[CheckpointFromLogs],
         e2e_result: bool | None,
     ):
-        self.test_name = test_name
         self.checkpoints = checkpoints
         self.correct_logs = correct_logs
         self.missing_logs = missing_logs
         self.extra_checkpoints_processed = extra_checkpoints_processed
         self.e2e_result = e2e_result
+
+
+class EvaluatedTest:
+    def __init__(
+        self,
+        test_name: str,
+        ind_evaluated_tests: list[IndEvaluatedTest],
+    ):
+        self.test_name = test_name
+        self.ind_evaluated_tests = ind_evaluated_tests
 
 
 class CorrectMissingData:
@@ -529,10 +537,12 @@ def evaluate_logs():
     """Pulls the logs from LOG_FILEPATH and then evaluates them against the golden checkpoints. Returns a list of EvaluatedTest objects."""
     evaluated_tests = []
     logs = generate_checkpoints_from_logs(LOG_FILEPATH)
-    for test, checkpoints in logs.items():
-        test_and_checkpoint = test.split("/")[1].strip().split(" ")
+    for test, items in logs.items():
+        ind_evaluated_tests = []
 
+        test_and_checkpoint = test.split("/")[1].strip().split(" ")
         curr_test_name = test_and_checkpoint[0]
+
         curr_starting_checkpoint = (
             test_and_checkpoint[1] if len(test_and_checkpoint) > 1 else None
         )
@@ -542,62 +552,64 @@ def evaluate_logs():
             else False
         )
 
-        if curr_test_name in PLAYGROUND_TESTS:
-            processed_checkpoints: list[CheckpointFromLogs] = []
-            for checkpoint in checkpoints:
-                processed_checkpoints.append(
-                    CheckpointFromLogs(
-                        checkpoint["url"],
-                        [Log(log) for log in checkpoint["logs"]],
+        for checkpoints in items:
+            if curr_test_name in PLAYGROUND_TESTS:
+                processed_checkpoints: list[CheckpointFromLogs] = []
+                for checkpoint in checkpoints:
+                    processed_checkpoints.append(
+                        CheckpointFromLogs(
+                            checkpoint["url"],
+                            [Log(log) for log in checkpoint["logs"]],
+                        )
+                    )
+
+                golden_checkpoints = PLAYGROUND_TESTS[curr_test_name].checkpoints
+                if curr_starting_checkpoint is not None:
+                    indices = [
+                        index
+                        for index, checkpoint in enumerate(golden_checkpoints)
+                        if checkpoint.name == curr_starting_checkpoint
+                    ]
+                    golden_checkpoints = golden_checkpoints[indices[0] :]
+
+                if curr_test_checkpoint_only:
+                    golden_checkpoints = golden_checkpoints[:1]
+                    processed_checkpoints = processed_checkpoints[:1]
+
+                evaluated_checkpoints, extra_checkpoints = (
+                    compare_processed_and_golden_checkpoints(
+                        golden_checkpoints, processed_checkpoints
                     )
                 )
 
-            golden_checkpoints = PLAYGROUND_TESTS[curr_test_name].checkpoints
-            if curr_starting_checkpoint is not None:
-                indices = [
-                    index
-                    for index, checkpoint in enumerate(golden_checkpoints)
-                    if checkpoint.name == curr_starting_checkpoint
-                ]
-                golden_checkpoints = golden_checkpoints[indices[0] :]
+                all_correct_logs: list[GoldenLog] = []
+                all_missing_logs: list[GoldenLog] = []
 
-            if curr_test_checkpoint_only:
-                golden_checkpoints = golden_checkpoints[:1]
-                processed_checkpoints = processed_checkpoints[:1]
+                for evaluated_checkpoint in evaluated_checkpoints:
+                    all_correct_logs.extend(evaluated_checkpoint.correct_golden_logs)
+                    all_missing_logs.extend(evaluated_checkpoint.missing_golden_logs)
 
-            evaluated_checkpoints, extra_checkpoints = (
-                compare_processed_and_golden_checkpoints(
-                    golden_checkpoints, processed_checkpoints
-                )
-            )
+                # print_evaluated_checkpoints(evaluated_logs)
+                # print_extra_checkpoints(extra_logs)
 
-            all_correct_logs: list[GoldenLog] = []
-            all_missing_logs: list[GoldenLog] = []
+                e2e_result = None
+                if not curr_test_checkpoint_only:
+                    e2e_result = any(
+                        evaluate_e2e(PLAYGROUND_TESTS[curr_test_name].e2e, extra)
+                        for extra in extra_checkpoints
+                    )
 
-            for evaluated_checkpoint in evaluated_checkpoints:
-                all_correct_logs.extend(evaluated_checkpoint.correct_golden_logs)
-                all_missing_logs.extend(evaluated_checkpoint.missing_golden_logs)
-
-            # print_evaluated_checkpoints(evaluated_logs)
-            # print_extra_checkpoints(extra_logs)
-
-            e2e_result = None
-            if not curr_test_checkpoint_only:
-                e2e_result = any(
-                    evaluate_e2e(PLAYGROUND_TESTS[curr_test_name].e2e, extra)
-                    for extra in extra_checkpoints
+                ind_evaluated_tests.append(
+                    IndEvaluatedTest(
+                        checkpoints=evaluated_checkpoints,
+                        correct_logs=all_correct_logs,
+                        missing_logs=all_missing_logs,
+                        extra_checkpoints_processed=extra_checkpoints,
+                        e2e_result=e2e_result,
+                    )
                 )
 
-            evaluated_tests.append(
-                EvaluatedTest(
-                    test_name=test,
-                    checkpoints=evaluated_checkpoints,
-                    correct_logs=all_correct_logs,
-                    missing_logs=all_missing_logs,
-                    extra_checkpoints_processed=extra_checkpoints,
-                    e2e_result=e2e_result,
-                )
-            )
+        evaluated_tests.append(EvaluatedTest(curr_test_name, ind_evaluated_tests))
     return evaluated_tests
 
 
@@ -630,6 +642,22 @@ def update_summary(summary: dict, components: list, type: str):
             summary[category][task][test].missing += 1
 
 
+class CheckpointMatchStats:
+    def __init__(self):
+        self.full_match = 0
+        self.partial_match = 0
+        self.missing = 0
+
+    def __str__(self):
+        total = self.full_match + self.partial_match + self.missing
+
+        return f"full_match ({self.full_match}/{total}), partial_match ({self.partial_match}/{total}), missing ({self.missing}/{total})"
+
+
+def get_pass_stats(pass_count: int, fail_count: int):
+    return f"{pass_count}/{pass_count + fail_count} ({round(pass_count * 100 / (pass_count + fail_count))}%)"
+
+
 def export_results(evaluated_tests: list[EvaluatedTest]):
     """Exports the results of the evaluated tests into OUTPUT_FILEPATH"""
     with open(OUTPUT_FILEPATH, "w") as file:
@@ -637,30 +665,67 @@ def export_results(evaluated_tests: list[EvaluatedTest]):
         total_missing: list[GoldenLog] = []
 
         for evaluated_test in evaluated_tests:
+            evaluated_e2e = False
+            e2e_pass = 0
+            e2e_fail = 0
+
+            extra_checkpoints_str = ""
+
+            evaluated_checkpoints_to_print: dict[str, CheckpointMatchStats] = {}
+
+            for index, ind_evaluated_test in enumerate(
+                evaluated_test.ind_evaluated_tests
+            ):
+                if ind_evaluated_test.e2e_result is not None:
+                    evaluated_e2e = True
+                    if ind_evaluated_test.e2e_result:
+                        e2e_pass += 1
+                    else:
+                        e2e_fail += 1
+
+                for evaluated_checkpoint in ind_evaluated_test.checkpoints:
+                    if evaluated_checkpoint.name not in evaluated_checkpoints_to_print:
+                        evaluated_checkpoints_to_print[evaluated_checkpoint.name] = (
+                            CheckpointMatchStats()
+                        )
+
+                    if evaluated_checkpoint.checkpoint_status == "full_match":
+                        evaluated_checkpoints_to_print[
+                            evaluated_checkpoint.name
+                        ].full_match += 1
+                    elif evaluated_checkpoint.checkpoint_status == "partial_match":
+                        evaluated_checkpoints_to_print[
+                            evaluated_checkpoint.name
+                        ].partial_match += 1
+                    elif evaluated_checkpoint.checkpoint_status == "missing":
+                        evaluated_checkpoints_to_print[
+                            evaluated_checkpoint.name
+                        ].missing += 1
+
+                    print(evaluated_checkpoint.correct_golden_logs)
+                    total_correct.extend(evaluated_checkpoint.correct_golden_logs)
+                    print(evaluated_checkpoint.missing_golden_logs)
+                    total_missing.extend(evaluated_checkpoint.missing_golden_logs)
+
+                for extra_checkpoint in ind_evaluated_test.extra_checkpoints_processed:
+                    extra_checkpoints_str += (
+                        "    EXTRA (" + str(index) + "): " + extra_checkpoint.url + "\n"
+                    )
 
             file.write(
                 evaluated_test.test_name
                 + (
                     ""
-                    if evaluated_test.e2e_result is None
-                    else " pass" if evaluated_test.e2e_result else " fail"
+                    if not evaluated_e2e
+                    else (" pass " + get_pass_stats(e2e_pass, e2e_fail))
                 )
                 + "\n"
             )
-            for evaluated_checkpoint in evaluated_test.checkpoints:
-                file.write(
-                    "    "
-                    + evaluated_checkpoint.name
-                    + " "
-                    + evaluated_checkpoint.checkpoint_status
-                    + "\n"
-                )
 
-                total_correct.extend(evaluated_checkpoint.correct_golden_logs)
-                total_missing.extend(evaluated_checkpoint.missing_golden_logs)
+            for checkpoint_name, stats in evaluated_checkpoints_to_print.items():
+                file.write("    " + checkpoint_name + " " + str(stats) + "\n")
 
-            for extra_checkpoint in evaluated_test.extra_checkpoints_processed:
-                file.write("    EXTRA: " + extra_checkpoint.url + "\n")
+            file.write(extra_checkpoints_str)
 
         file.write("\n\n")
 
@@ -728,7 +793,10 @@ def remove_placeholders_from_url_query_params(url: str):
         if value[0].startswith("[") and value[0].endswith("]"):
             parsed_query[key] = value[0][1:-1]
 
-    return parsed_url.path + "?" + urlencode(parsed_query)
+    if len(parsed_query) == 0:
+        return parsed_url.path
+    else:
+        return parsed_url.path + "?" + urlencode(parsed_query)
 
 
 # E2E test scaffolding
@@ -738,6 +806,7 @@ if __name__ == "__main__":
     tests = []
     skip_to_evaluate = False
     checkpoint_only = False
+    num_times = 1
 
     if len(sys.argv) > 1:
         for i, arg in enumerate(sys.argv[1:]):
@@ -747,6 +816,10 @@ if __name__ == "__main__":
 
             if arg == "-checkpointonly":
                 checkpoint_only = True
+                continue
+
+            if arg.startswith("-n="):
+                num_times = int(arg.split("=")[1])
                 continue
 
             parts = arg.split("/", 1)
@@ -791,50 +864,55 @@ if __name__ == "__main__":
             pass
 
         for test in tests:
-            with open(LOG_FILEPATH, "a") as file:
-                starting_checkpoint_str = (
-                    test["starting_checkpoint"]
-                    if test["starting_checkpoint"] is not None
-                    else ""
-                )
-                if checkpoint_only:
-                    starting_checkpoint_str += " -checkpointonly"
-
-                file.write(
-                    f"TEST BEGIN: playground/{test['test']} {starting_checkpoint_str}\n"
-                )
-                file.write(f"NAVIGATE // {test['path']}\n")
-
-            existing_lines = 0
-            with open(LOG_FILEPATH, "r") as file:
-                existing_lines = len(file.readlines())
-
-            run_agent_with_limits(
-                goal=PLAYGROUND_TESTS[test["test"]].goal,
-                url=f"localhost:{LOCALHOST_PORT}" + test["path"],
-                existing_lines=existing_lines,
-                log_file=LOG_FILEPATH,
-                timeout=MAX_AGENT_TIME,
-                addl_lines=100,
-                custom_log_break=(
-                    (
-                        lambda lines: len(
-                            [line for line in lines if "NAVIGATE" in line]
-                        )
-                        >= 2
+            for _ in range(num_times):
+                with open(LOG_FILEPATH, "a") as file:
+                    starting_checkpoint_str = (
+                        test["starting_checkpoint"]
+                        if test["starting_checkpoint"] is not None
+                        else ""
                     )
-                    if (test["starting_checkpoint"] is not None and checkpoint_only)
-                    else None
-                ),
-                custom_log_break_str=(
-                    "only running for single checkpoint"
-                    if (test["starting_checkpoint"] is not None and checkpoint_only)
-                    else None
-                ),
-            )
+                    if checkpoint_only:
+                        starting_checkpoint_str += " -checkpointonly"
 
-            with open(LOG_FILEPATH, "a") as file:
-                file.write("TEST FINISH\n")
+                    file.write(
+                        f"TEST BEGIN: playground/{test['test']} {starting_checkpoint_str}\n"
+                    )
+                    file.write(f"NAVIGATE // {test['path']}\n")
+
+                existing_lines = 0
+                with open(LOG_FILEPATH, "r") as file:
+                    existing_lines = len(file.readlines())
+
+                run_agent_with_limits(
+                    goal=PLAYGROUND_TESTS[test["test"]].goal,
+                    url=f"localhost:{LOCALHOST_PORT}" + test["path"],
+                    existing_lines=existing_lines,
+                    log_file=LOG_FILEPATH,
+                    timeout=MAX_AGENT_TIME,
+                    addl_lines=100,
+                    custom_log_break=(
+                        (
+                            lambda lines: len(
+                                [
+                                    line
+                                    for line in lines[existing_lines:]
+                                    if "NAVIGATE" in line
+                                ]
+                            )
+                            >= 1
+                        )
+                        if (test["starting_checkpoint"] is not None and checkpoint_only)
+                        else None
+                    ),
+                    custom_log_break_str=(
+                        "only running for single checkpoint"
+                        if (test["starting_checkpoint"] is not None and checkpoint_only)
+                        else None
+                    ),
+                )
+
+                with open(LOG_FILEPATH, "a") as file:
+                    file.write("TEST FINISH\n")
 
     # Evaluate the logs that exist
     evaluated_tests = evaluate_logs()

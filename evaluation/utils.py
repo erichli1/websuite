@@ -67,7 +67,10 @@ def get_evals_dict(filename: str) -> dict[str, list[TestSpecificEvalDict]]:
     return eval_dict
 
 
-def generate_checkpoints_from_logs(filename: str) -> dict[str, list]:
+def generate_checkpoints_from_logs(
+    filename: str,
+) -> dict[str, list[list[dict[str, Any]]]]:
+    """Parses a log file into a dictionary mapping test names to a list of test trajectories, each of which is a list of checkpoints (each checkpoint is a dictionary with a url and logs)"""
     lines = ""
     with open(filename, "r") as file:
         lines = file.readlines()
@@ -107,11 +110,16 @@ def generate_checkpoints_from_logs(filename: str) -> dict[str, list]:
                         "logs": current_logs,
                     }
                 )
-            full[current_test] = checkpoints
+
+            if current_test not in full:
+                full[current_test] = [checkpoints]
+            else:
+                full[current_test].append(checkpoints)
 
             collecting = False
             current_test = None
             current_logs = []
+            checkpoints = []
         elif collecting:
             current_logs.append(line)
 
