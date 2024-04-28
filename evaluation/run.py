@@ -528,18 +528,37 @@ def bool_to_pass_fail(b: bool) -> str:
     return "pass" if b else "fail"
 
 
+def calc_pass_stats(pass_count: int, total_count: int) -> str:
+    return f"{pass_count}/{total_count} ({round(pass_count * 100 / (total_count))}%)"
+
+
 ## RUNNING THE EVALUATION
+
+
+class PassStats:
+    def __init__(self):
+        self.pass_count = 0
+        self.total_count = 0
+        self.track_process = False
+        self.process_pass_count = 0
+        self.process_total_count = 0
 
 
 if __name__ == "__main__":
     # Identify the right goals and urls to iterate through
     skip_to_evaluate = False
     tests_and_metadatas = []
+    num_times = 1
+
     if len(sys.argv) > 1:
         for i, arg in enumerate(sys.argv[1:]):
             if arg == "-evalonly":
                 skip_to_evaluate = True
                 break
+
+            if arg.startswith("-n="):
+                num_times = int(arg.split("=")[1])
+                continue
 
             parts = arg.split("/", 1)
             if len(parts) == 1:
@@ -563,39 +582,59 @@ if __name__ == "__main__":
         # Run the tests
         for tests, metadata in tests_and_metadatas:
             for test in tests:
-                with open(LOG_FILEPATH, "a") as file:
-                    file.write(f"TEST BEGIN: {metadata[0]}/{metadata[1]} {test.name}\n")
+                for _ in range(num_times):
+                    with open(LOG_FILEPATH, "a") as file:
+                        file.write(
+                            f"TEST BEGIN: {metadata[0]}/{metadata[1]} {test.name}\n"
+                        )
 
-                existing_lines = 0
-                with open(LOG_FILEPATH, "r") as file:
-                    existing_lines = len(file.readlines())
-                run_agent_with_limits(
-                    goal=test.goal,
-                    url=get_url(LOCALHOST_PORT, *metadata),
-                    existing_lines=existing_lines,
-                    log_file=LOG_FILEPATH,
-                    timeout=test.max_time,
-                    addl_lines=test.max_lines,
-                )
+                    existing_lines = 0
+                    with open(LOG_FILEPATH, "r") as file:
+                        existing_lines = len(file.readlines())
+                    run_agent_with_limits(
+                        goal=test.goal,
+                        url=get_url(LOCALHOST_PORT, *metadata),
+                        existing_lines=existing_lines,
+                        log_file=LOG_FILEPATH,
+                        timeout=test.max_time,
+                        addl_lines=test.max_lines,
+                    )
 
-                with open(LOG_FILEPATH, "a") as file:
-                    file.write("TEST FINISH\n")
+                    with open(LOG_FILEPATH, "a") as file:
+                        file.write("TEST FINISH\n")
 
     # Evaluate the log file
     eval_dict = get_evals_dict(LOG_FILEPATH)
     with open(OUTPUT_FILEPATH, "w") as file:
         for key, items in eval_dict.items():
-            logs = [Log(item) for item in items["logs"]]
-            test, metadata = get_specific_test_and_metadata(*re.split(r"[ /]", key))
-            if test.submit_eval is not None:
-                submit_eval_result = (
-                    test.submit_eval(Log(items["submit"]))
-                    if items["submit"] is not None
-                    else False
-                )
+            pass_stats = PassStats()
 
+            for item in items:
+                logs = [Log(log) for log in item["logs"]]
+                test, metadata = get_specific_test_and_metadata(*re.split(r"[ /]", key))
+
+                pass_stats.total_count += 1
+                if test.eval(logs):
+                    pass_stats.pass_count += 1
+
+                if test.submit_eval is not None:
+                    pass_stats.track_process = True
+
+                    submit_eval_result = (
+                        test.submit_eval(Log(item["submit"]))
+                        if item["submit"] is not None
+                        else False
+                    )
+
+                    pass_stats.process_total_count += 1
+                    if submit_eval_result:
+                        pass_stats.process_pass_count += 1
+
+            if pass_stats.track_process:
                 file.write(
-                    f"{key}: process:{bool_to_pass_fail(test.eval(logs))} submit:{bool_to_pass_fail(submit_eval_result)}\n"
+                    f"{key}: process: pass {calc_pass_stats(pass_stats.process_pass_count, pass_stats.process_total_count)} submit: pass {calc_pass_stats(pass_stats.pass_count, pass_stats.total_count)}\n"
                 )
             else:
-                file.write(f"{key}: {bool_to_pass_fail(test.eval(logs))}\n")
+                file.write(
+                    f"{key}: pass {calc_pass_stats(pass_stats.pass_count, pass_stats.total_count)}\n"
+                )

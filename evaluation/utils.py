@@ -30,7 +30,7 @@ class TestSpecificEvalDict(TypedDict):
     submit: str
 
 
-def get_evals_dict(filename: str) -> dict[str, TestSpecificEvalDict]:
+def get_evals_dict(filename: str) -> dict[str, list[TestSpecificEvalDict]]:
     lines = ""
     with open(filename, "r") as file:
         lines = file.readlines()
@@ -48,7 +48,12 @@ def get_evals_dict(filename: str) -> dict[str, TestSpecificEvalDict]:
             current_key = line.split(":")[1].strip()
         elif line.startswith("TEST FINISH"):
             if current_key:
-                eval_dict[current_key] = {"logs": current_logs, "submit": submit}
+                if current_key not in eval_dict:
+                    eval_dict[current_key] = [{"logs": current_logs, "submit": submit}]
+                else:
+                    eval_dict[current_key].append(
+                        {"logs": current_logs, "submit": submit}
+                    )
             collecting = False
             current_key = None
             current_logs = []
