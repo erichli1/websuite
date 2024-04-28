@@ -1,7 +1,7 @@
 import os
 from typing import Literal
 import sys
-from urllib.parse import urlparse, parse_qs, urlencode
+from urllib.parse import urlparse, parse_qs, urlencode, quote
 import json
 
 from evaluation.utils import (
@@ -702,9 +702,7 @@ def export_results(evaluated_tests: list[EvaluatedTest]):
                             evaluated_checkpoint.name
                         ].missing += 1
 
-                    print(evaluated_checkpoint.correct_golden_logs)
                     total_correct.extend(evaluated_checkpoint.correct_golden_logs)
-                    print(evaluated_checkpoint.missing_golden_logs)
                     total_missing.extend(evaluated_checkpoint.missing_golden_logs)
 
                 for extra_checkpoint in ind_evaluated_test.extra_checkpoints_processed:
@@ -784,7 +782,7 @@ def export_results(evaluated_tests: list[EvaluatedTest]):
 # MISC HELPERS
 
 
-def remove_placeholders_from_url_query_params(url: str):
+def remove_placeholders_from_url_query_params(url: str, encode_url: bool = False):
     parsed_url = urlparse(url)
     parsed_query_raw = parse_qs(parsed_url.query)
 
@@ -796,7 +794,14 @@ def remove_placeholders_from_url_query_params(url: str):
     if len(parsed_query) == 0:
         return parsed_url.path
     else:
-        return parsed_url.path + "?" + urlencode(parsed_query)
+        query_string = "&".join(
+            [f"{key}={value}" for key, value in parsed_query.items()]
+        )
+        return parsed_url.path + "?" + query_string
+
+
+def encode_url_query_params(url: str):
+    return quote(url, safe="/=?&")
 
 
 # E2E test scaffolding
@@ -885,7 +890,8 @@ if __name__ == "__main__":
 
                 run_agent_with_limits(
                     goal=PLAYGROUND_TESTS[test["test"]].goal,
-                    url=f"localhost:{LOCALHOST_PORT}" + test["path"],
+                    url=f"localhost:{LOCALHOST_PORT}"
+                    + encode_url_query_params(test["path"]),
                     existing_lines=existing_lines,
                     log_file=LOG_FILEPATH,
                     timeout=MAX_AGENT_TIME,
