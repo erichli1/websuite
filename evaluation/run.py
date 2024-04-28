@@ -479,31 +479,31 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
 def get_specific_test_and_metadata(task: str, test: str, name: str):
     task_dict = ind_tests.get(task)
     if task_dict is None:
-        print(f"ERROR: unable to find task {task}")
+        raise Exception(f"ERROR: unable to find task {task}")
         return None
 
     tests_obj = task_dict.get(test)
     if tests_obj is None:
-        print(f"ERROR: unable to find test {task}/{test}")
+        raise Exception(f"ERROR: unable to find test {task}/{test}")
         return None
 
     for test_obj in tests_obj:
         if test_obj.name == name:
             return (test_obj, (task, test))
 
-    print(f"ERROR: unable to find test {task}/{test}/{name}")
+    raise Exception(f"ERROR: unable to find test {task}/{test}/{name}")
     return None
 
 
 def get_tests_and_metadata(task: str, test: str) -> TestsAndMetadata | None:
     task_dict = ind_tests.get(task)
     if task_dict is None:
-        print(f"ERROR: unable to find task {task}")
+        raise Exception(f"ERROR: unable to find task {task}")
         return None
 
     test_obj = task_dict.get(test)
     if test_obj is None:
-        print(f"ERROR: unable to find test {task}/{test}")
+        raise Exception(f"ERROR: unable to find test {task}/{test}")
         return None
 
     return (test_obj, (task, test))
@@ -512,7 +512,7 @@ def get_tests_and_metadata(task: str, test: str) -> TestsAndMetadata | None:
 def get_tests_and_metadatas_from_task(task: str) -> list[TestsAndMetadata] | None:
     task_dict = ind_tests.get(task)
     if task_dict is None:
-        print(f"ERROR: unable to find task {task}")
+        raise Exception(f"ERROR: unable to find task {task}")
         return None
 
     return [get_tests_and_metadata(task, test) for test in task_dict.keys()]
@@ -550,26 +550,26 @@ if __name__ == "__main__":
     tests_and_metadatas = []
     num_times = 1
 
-    if len(sys.argv) > 1:
-        for i, arg in enumerate(sys.argv[1:]):
-            if arg == "-evalonly":
-                skip_to_evaluate = True
-                break
+    for i, arg in enumerate(sys.argv[1:]):
+        if arg == "-evalonly":
+            skip_to_evaluate = True
+            break
 
-            if arg.startswith("-n="):
-                num_times = int(arg.split("=")[1])
-                continue
+        if arg.startswith("-n="):
+            num_times = int(arg.split("=")[1])
+            continue
 
-            parts = arg.split("/", 1)
-            if len(parts) == 1:
-                new = get_tests_and_metadatas_from_task(parts[0])
-                if new is not None:
-                    tests_and_metadatas.extend(new)
-            elif len(parts) == 2:
-                new = get_tests_and_metadata(parts[0], parts[1])
-                if new is not None:
-                    tests_and_metadatas.append(new)
-    else:
+        parts = arg.split("/", 1)
+        if len(parts) == 1:
+            new = get_tests_and_metadatas_from_task(parts[0])
+            if new is not None:
+                tests_and_metadatas.extend(new)
+        elif len(parts) == 2:
+            new = get_tests_and_metadata(parts[0], parts[1])
+            if new is not None:
+                tests_and_metadatas.append(new)
+
+    if len(tests_and_metadatas) == 0:
         new = get_all_tests_and_metadatas()
         if new is not None:
             tests_and_metadatas = new

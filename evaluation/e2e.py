@@ -813,47 +813,47 @@ if __name__ == "__main__":
     checkpoint_only = False
     num_times = 1
 
-    if len(sys.argv) > 1:
-        for i, arg in enumerate(sys.argv[1:]):
-            if arg == "-evalonly":
-                skip_to_evaluate = True
-                break
+    for i, arg in enumerate(sys.argv[1:]):
+        if arg == "-evalonly":
+            skip_to_evaluate = True
+            break
 
-            if arg == "-checkpointonly":
-                checkpoint_only = True
-                continue
+        if arg == "-checkpointonly":
+            checkpoint_only = True
+            continue
 
-            if arg.startswith("-n="):
-                num_times = int(arg.split("=")[1])
-                continue
+        if arg.startswith("-n="):
+            num_times = int(arg.split("=")[1])
+            continue
 
-            parts = arg.split("/", 1)
+        parts = arg.split("/", 1)
 
-            if parts[0] in PLAYGROUND_TESTS:
-                if len(parts) == 1:
-                    tests.append(
-                        {
-                            "test": parts[0],
-                            "starting_checkpoint": None,
-                            "path": "/playground",
-                        }
-                    )
-                elif len(parts) == 2:
-                    for checkpoint in PLAYGROUND_TESTS[parts[0]].checkpoints:
-                        if parts[1] == checkpoint.name:
-                            tests.append(
-                                {
-                                    "test": parts[0],
-                                    "starting_checkpoint": parts[1],
-                                    "path": remove_placeholders_from_url_query_params(
-                                        checkpoint.url
-                                    ),
-                                }
-                            )
-                            break
-            else:
-                print(f"ERROR: unable to find test {parts[0]}")
-    else:
+        if parts[0] in PLAYGROUND_TESTS:
+            if len(parts) == 1:
+                tests.append(
+                    {
+                        "test": parts[0],
+                        "starting_checkpoint": None,
+                        "path": "/playground",
+                    }
+                )
+            elif len(parts) == 2:
+                for checkpoint in PLAYGROUND_TESTS[parts[0]].checkpoints:
+                    if parts[1] == checkpoint.name:
+                        tests.append(
+                            {
+                                "test": parts[0],
+                                "starting_checkpoint": parts[1],
+                                "path": remove_placeholders_from_url_query_params(
+                                    checkpoint.url
+                                ),
+                            }
+                        )
+                        break
+        else:
+            raise Exception(f"ERROR: unable to find test {parts[0]}")
+
+    if len(tests) == 0:
         tests = [
             {
                 "test": key,
