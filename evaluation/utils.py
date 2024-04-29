@@ -120,6 +120,7 @@ def generate_checkpoints_from_logs(
             current_test = None
             current_logs = []
             checkpoints = []
+            current_checkpoint = None
         elif collecting:
             current_logs.append(line)
 

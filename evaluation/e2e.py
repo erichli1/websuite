@@ -18,7 +18,8 @@ from evaluation.evaluators import Log
 # HELPER CONSTANTS AND CLASSES
 
 PARENT_FOLDER = os.path.join(os.path.dirname(__file__), "../")
-MAX_AGENT_TIME = 60
+CHECKPOINT_AGENT_TIME = 90
+FULL_AGENT_TIME = 300
 LOG_FILEPATH = (
     PARENT_FOLDER + "trajectories/log.txt"
 )  # needs to be in sync with environment/app.py
@@ -311,7 +312,8 @@ def matching_urls(golden_url: str, processed_url: str):
         # Account for filler params
         for key in list(golden_qp.keys()):
             if golden_qp[key][0].startswith("[") and golden_qp[key][0].endswith("]"):
-                golden_qp[key] = processed_qp[key]
+                if key in processed_qp:
+                    golden_qp[key] = processed_qp[key]
 
         return golden_qp == processed_qp
 
@@ -591,7 +593,7 @@ def evaluate_logs():
 
                 if curr_test_checkpoint_only:
                     golden_checkpoints = golden_checkpoints[:1]
-                    processed_checkpoints = processed_checkpoints[:1]
+                    processed_checkpoints = processed_checkpoints
 
                 evaluated_checkpoints, extra_checkpoints = (
                     compare_processed_and_golden_checkpoints(
@@ -925,14 +927,27 @@ if __name__ == "__main__":
             raise Exception(f"ERROR: unable to find test {parts[0]}")
 
     if len(tests) == 0:
-        tests = [
-            {
-                "test": key,
-                "starting_checkpoint": None,
-                "path": "/playground",
-            }
-            for key in PLAYGROUND_TESTS.keys()
-        ]
+        if checkpoint_only:
+            for key in PLAYGROUND_TESTS.keys():
+                for checkpoint in PLAYGROUND_TESTS[key].checkpoints:
+                    tests.append(
+                        {
+                            "test": key,
+                            "starting_checkpoint": checkpoint.name,
+                            "path": remove_placeholders_from_url_query_params(
+                                checkpoint.url
+                            ),
+                        }
+                    )
+        else:
+            tests = [
+                {
+                    "test": key,
+                    "starting_checkpoint": None,
+                    "path": "/playground",
+                }
+                for key in PLAYGROUND_TESTS.keys()
+            ]
 
     # Run the agent
     if not skip_to_evaluate:
@@ -965,7 +980,9 @@ if __name__ == "__main__":
                     + encode_url_query_params(test["path"]),
                     existing_lines=existing_lines,
                     log_file=LOG_FILEPATH,
-                    timeout=MAX_AGENT_TIME,
+                    timeout=(
+                        CHECKPOINT_AGENT_TIME if checkpoint_only else FULL_AGENT_TIME
+                    ),
                     addl_lines=100,
                     custom_log_break=(
                         (
