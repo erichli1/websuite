@@ -174,7 +174,7 @@ export const ALL_TESTS: {
     basicform: (
       <FormContainer
         fields={[["firstName", "lastName"], "email"]}
-        submitLabel="submit"
+        submitLabel="Submit"
       />
     ),
     complexform: (
@@ -187,7 +187,7 @@ export const ALL_TESTS: {
           ["city", "state", "zipCode"],
           "birthday",
         ]}
-        submitLabel="submit"
+        submitLabel="Submit"
       />
     ),
   },

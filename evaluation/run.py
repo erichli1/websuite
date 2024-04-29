@@ -691,14 +691,19 @@ if __name__ == "__main__":
             logs = [Log(log) for log in item["logs"]]
             test, metadata = get_specific_test_and_metadata(*re.split(r"[ /]", key))
 
-            if test.eval(logs):
-                basic_stats.pass_count += 1
+            if test.submit_eval is None:
+                if test.eval(logs):
+                    basic_stats.pass_count += 1
+                else:
+                    basic_stats.fail_count += 1
             else:
-                basic_stats.fail_count += 1
-
-            if test.submit_eval is not None:
                 if process_stats is None:
                     process_stats = PassStats()
+
+                if test.eval(logs):
+                    process_stats.pass_count += 1
+                else:
+                    process_stats.fail_count += 1
 
                 submit_eval_result = (
                     test.submit_eval(Log(item["submit"]))
@@ -707,9 +712,9 @@ if __name__ == "__main__":
                 )
 
                 if submit_eval_result:
-                    process_stats.pass_count += 1
+                    basic_stats.pass_count += 1
                 else:
-                    process_stats.fail_count += 1
+                    basic_stats.fail_count += 1
 
         split_key = key.split("/")
         split_test = split_key[1].split(" ")
