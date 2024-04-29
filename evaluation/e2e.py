@@ -970,11 +970,7 @@ if __name__ == "__main__":
                     custom_log_break=(
                         (
                             lambda lines: len(
-                                [
-                                    line
-                                    for line in lines[existing_lines:]
-                                    if "NAVIGATE" in line
-                                ]
+                                [line for line in lines if "NAVIGATE" in line]
                             )
                             >= 1
                         )

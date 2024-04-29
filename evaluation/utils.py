@@ -129,6 +129,7 @@ def generate_checkpoints_from_logs(
 def check_limits(
     process,
     log_file: str,
+    existing_lines: int,
     line_threshold: int | None,
     timeout: int | None = None,
     custom_log_break: Callable[[list[str]], bool] | None = None,
@@ -147,7 +148,9 @@ def check_limits(
                 process.terminate()
                 print("Process terminated due to excess log entries.")
                 return
-            if custom_log_break is not None and custom_log_break(lines):
+            if custom_log_break is not None and custom_log_break(
+                lines[existing_lines:]
+            ):
                 process.terminate()
                 print(f"Process terminated due to: {custom_log_break_str}")
                 return
@@ -181,6 +184,7 @@ def run_agent_with_limits(
         args=(
             process,
             log_file,
+            existing_lines,
             (addl_lines + existing_lines) if addl_lines is not None else None,
             timeout,
             custom_log_break,

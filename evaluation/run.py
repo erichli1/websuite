@@ -37,6 +37,8 @@ class Test:
         max_lines: int | None = None,
         max_time: int | None = None,
         submit_eval: Callable[[str], bool] | None = None,
+        custom_log_break: Callable[[list[str]], bool] | None = None,
+        custom_log_break_str: str | None = None,
     ):
         self.goal = goal
         self.eval = eval
@@ -44,6 +46,8 @@ class Test:
         self.max_lines = max_lines
         self.max_time = LONG_MAX_TIME if max_time is None else max_time
         self.submit_eval = submit_eval
+        self.custom_log_break = custom_log_break
+        self.custom_log_break_str = custom_log_break_str
 
     def eval(self, response: list[str]) -> bool:
         return self.eval(response)
@@ -474,6 +478,11 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
                 ),
                 max_lines=10,
                 max_time=LONG_MAX_TIME,
+                custom_log_break=lambda lines: len(
+                    [line for line in lines if "SUBMIT" in line]
+                )
+                > 0,
+                custom_log_break_str="only running until form submitted",
             )
         ],
         "complexform": [
@@ -531,6 +540,11 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
                     ],
                 ),
                 max_lines=20,
+                custom_log_break=lambda lines: len(
+                    [line for line in lines if "SUBMIT" in line]
+                )
+                > 0,
+                custom_log_break_str="only running until form submitted",
             )
         ],
     },
@@ -662,6 +676,8 @@ if __name__ == "__main__":
                         log_file=LOG_FILEPATH,
                         timeout=test.max_time,
                         addl_lines=test.max_lines,
+                        custom_log_break=test.custom_log_break,
+                        custom_log_break_str=test.custom_log_break_str,
                     )
 
                     with open(LOG_FILEPATH, "a") as file:
