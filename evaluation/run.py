@@ -19,7 +19,8 @@ from evaluation.utils import (
 ## HELPFUL TYPES AND CONSTANTS
 
 PARENT_FOLDER = os.path.join(os.path.dirname(__file__), "../")
-MAX_AGENT_TIME = 30  # seconds
+SHORT_MAX_TIME = 90
+LONG_MAX_TIME = 300
 LOG_FILEPATH = (
     PARENT_FOLDER + "trajectories/log.txt"
 )  # needs to be in sync with environment/app.py
@@ -41,7 +42,7 @@ class Test:
         self.eval = eval
         self.name = "default" if name is None else name
         self.max_lines = max_lines
-        self.max_time = MAX_AGENT_TIME if max_time is None else max_time
+        self.max_time = LONG_MAX_TIME if max_time is None else max_time
         self.submit_eval = submit_eval
 
     def eval(self, response: list[str]) -> bool:
@@ -59,6 +60,8 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
                 lambda logs: eval.ordered(
                     logs, [eval.exact_match(component="click/button")]
                 ),
+                max_lines=1,
+                max_time=SHORT_MAX_TIME,
             )
         ],
         "confirmbutton": [
@@ -67,6 +70,8 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
                 lambda logs: eval.ordered(
                     logs, [eval.exact_match(component="click/confirmbutton")]
                 ),
+                max_lines=1,
+                max_time=SHORT_MAX_TIME,
             )
         ],
         "iconbutton": [
@@ -75,6 +80,8 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
                 lambda logs: eval.ordered(
                     logs, [eval.exact_match(component="click/iconbutton")]
                 ),
+                max_lines=1,
+                max_time=SHORT_MAX_TIME,
             )
         ],
         "link": [
@@ -86,6 +93,8 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
                         eval.exact_match(component="click/link"),
                     ],
                 ),
+                max_lines=1,
+                max_time=SHORT_MAX_TIME,
             )
         ],
         "slider": [
@@ -95,6 +104,8 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
                     logs, [eval.exact_match("click/slider", "100")]
                 ),
                 name="max",
+                max_lines=1,
+                max_time=SHORT_MAX_TIME,
             ),
             Test(
                 "Adjust the volume to be the minimum",
@@ -102,6 +113,8 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
                     logs, [eval.exact_match("click/slider", "0")]
                 ),
                 name="min",
+                max_lines=1,
+                max_time=SHORT_MAX_TIME,
             ),
             Test(
                 "Make the volume louder",
@@ -117,6 +130,8 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
                     ],
                 ),
                 name="louder",
+                max_lines=1,
+                max_time=SHORT_MAX_TIME,
             ),
             Test(
                 "Make the volume quieter",
@@ -132,6 +147,8 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
                     ],
                 ),
                 name="quieter",
+                max_lines=1,
+                max_time=SHORT_MAX_TIME,
             ),
         ],
         "snackbar": [
@@ -147,6 +164,8 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
                         ),
                     ],
                 ),
+                max_lines=1,
+                max_time=SHORT_MAX_TIME,
             ),
         ],
         "switch": [
@@ -156,11 +175,15 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
                     logs, [eval.exact_match(component="click/switch", newValue="true")]
                 ),
                 "on-from-off",
+                max_lines=1,
+                max_time=SHORT_MAX_TIME,
             ),
             Test(
                 "Turn off do not disturb",
                 lambda logs: eval.no_logs(logs),
                 "off-from-off",
+                max_lines=1,
+                max_time=SHORT_MAX_TIME,
             ),
         ],
         "dropdownmenu": [
@@ -169,6 +192,8 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
                 lambda logs: eval.ordered(
                     logs, [eval.exact_match(component="click/iconbutton", label="Menu")]
                 ),
+                max_lines=1,
+                max_time=SHORT_MAX_TIME,
             ),
         ],
         "accordion": [
@@ -178,6 +203,8 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
                     logs,
                     [eval.exact_match(component="click/accordion", newValue="open")],
                 ),
+                max_lines=1,
+                max_time=SHORT_MAX_TIME,
             )
         ],
     },
@@ -188,6 +215,8 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
                 lambda logs: eval.ordered(
                     logs, [eval.exact_match(component="type/text", newValue="John")]
                 ),
+                max_lines=1,
+                max_time=SHORT_MAX_TIME,
             )
         ],
         "date": [
@@ -204,6 +233,8 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
                         )
                     ],
                 ),
+                max_lines=1,
+                max_time=SHORT_MAX_TIME,
             )
         ],
         "phone": [
@@ -217,6 +248,8 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
                         )
                     ],
                 ),
+                max_lines=1,
+                max_time=SHORT_MAX_TIME,
             )
         ],
     },
@@ -228,6 +261,8 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
                     logs,
                     [eval.exact_match(component="select/select", newValue="Canada")],
                 ),
+                max_lines=1,
+                max_time=SHORT_MAX_TIME,
             ),
         ],
         "checkbox": [
@@ -237,6 +272,8 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
                     logs,
                     [eval.exact_match(component="select/checkbox", newValue="true")],
                 ),
+                max_lines=1,
+                max_time=SHORT_MAX_TIME,
             )
         ],
         "multicheck": [
@@ -263,6 +300,8 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
                         ),
                     ],
                 ),
+                max_lines=2,
+                max_time=SHORT_MAX_TIME,
             )
         ],
         "grid": [
@@ -279,6 +318,7 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
                 ),
                 max_lines=1,
                 name="select-one",
+                max_time=SHORT_MAX_TIME,
             ),
             # Can the agent precisely select two rows in order and then stop?
             Test(
@@ -294,7 +334,9 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
                         ),
                     ],
                 ),
+                max_lines=2,
                 name="linearly-select-two",
+                max_time=SHORT_MAX_TIME,
             ),
         ],
     },
@@ -306,6 +348,7 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
                     logs, [eval.exact_match(component="click/button", label="Settings")]
                 ),
                 max_lines=1,
+                max_time=SHORT_MAX_TIME,
             )
         ],
         "nested": [
@@ -319,6 +362,7 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
                     ],
                 ),
                 max_lines=2,
+                max_time=SHORT_MAX_TIME,
             )
         ],
     },
@@ -329,6 +373,8 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
                 lambda logs: eval.ordered(
                     logs, [eval.exact_match(component="type/text", newValue="2032")]
                 ),
+                max_lines=1,
+                max_time=SHORT_MAX_TIME,
             )
         ],
         "findtooltip": [
@@ -338,6 +384,8 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
                     logs,
                     [eval.exact_match(component="type/text", newValue="California")],
                 ),
+                max_lines=1,
+                max_time=SHORT_MAX_TIME,
             )
         ],
         "finddialog": [
@@ -346,6 +394,8 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
                 lambda logs: eval.at_least_one(
                     logs, [eval.exact_match(component="type/text", newValue="2036")]
                 ),
+                max_lines=10,
+                max_time=SHORT_MAX_TIME,
             ),
         ],
         "findaccordion": [
@@ -354,6 +404,8 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
                 lambda logs: eval.at_least_one(
                     logs, [eval.exact_match(component="type/text", newValue="2032")]
                 ),
+                max_lines=10,
+                max_time=SHORT_MAX_TIME,
             )
         ],
     },
@@ -370,6 +422,8 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
                         )
                     ],
                 ),
+                max_lines=10,
+                max_time=LONG_MAX_TIME,
             )
         ],
         "gridsort": [
@@ -384,6 +438,8 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
                         )
                     ],
                 ),
+                max_lines=1,
+                max_time=SHORT_MAX_TIME,
             )
         ],
     },
@@ -416,6 +472,8 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
                         )
                     ],
                 ),
+                max_lines=10,
+                max_time=LONG_MAX_TIME,
             )
         ],
         "complexform": [
@@ -463,7 +521,7 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
                         eval.exact_match(component="click/button", label="Submit"),
                     ],
                 ),
-                max_time=60,
+                max_time=LONG_MAX_TIME,
                 submit_eval=lambda log: eval.check_one(
                     log,
                     [
@@ -472,6 +530,7 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
                         )
                     ],
                 ),
+                max_lines=20,
             )
         ],
     },
