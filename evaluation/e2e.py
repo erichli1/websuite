@@ -171,7 +171,7 @@ PLAYGROUND_TESTS: dict[str, PlaygroundTest] = {
                 full_match_verifier_next_checkpoint='/playground/checkout?cart={"id":"1","customizations":{"memory":"8GB","storage":"512GB"},"price":1599}',
             ),
             GoldenCheckpoint(
-                url='/playground/checkout?cart=[{"id":"1","customizations":{"memory":"8GB","storage":"512GB"},"price":1999}]',
+                url='/playground/checkout?cart=[{"id":"1","customizations":{"memory":"8GB","storage":"512GB"},"price":1599}]',
                 golden_logs=[
                     GoldenLog("type/text // First name // John", "fill/complex"),
                     GoldenLog("type/text // Last name // Doe", "fill/complex"),
@@ -511,9 +511,12 @@ def compare_processed_and_golden_checkpoints(
                 matching_urls(golden_checkpoints[golden_index].url, future)
                 for future in future_processed_checkpoint_urls
             ):
-                i_index = future_processed_checkpoint_urls.index(
-                    golden_checkpoints[golden_index].url
-                )
+                possible_i_indices = [
+                    index
+                    for index, future in enumerate(future_processed_checkpoint_urls)
+                    if matching_urls(golden_checkpoints[golden_index].url, future)
+                ]
+                i_index = possible_i_indices[0]
                 for i in range(processed_index, processed_index + i_index):
                     extra_checkpoints_processed.append(processed_checkpoints[i])
                 processed_index += i_index
