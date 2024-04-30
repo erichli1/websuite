@@ -151,7 +151,7 @@ PLAYGROUND_TESTS: dict[str, PlaygroundTest] = {
                     ),
                     GoldenLog("click/iconbutton // Search"),
                 ],
-                name="search_for_item",
+                name="1_search_for_item",
                 full_match_verifier_next_checkpoint="/playground/search?query=[]",
             ),
             GoldenCheckpoint(
@@ -162,12 +162,12 @@ PLAYGROUND_TESTS: dict[str, PlaygroundTest] = {
                         "search/appropriate",
                     )
                 ],
-                "select_item_from_search",
+                "2_select_item_from_search",
             ),
             GoldenCheckpoint(
                 url="/playground/product/1",
                 golden_logs=[GoldenLog("click/button // Buy now")],
-                name="purchase_item",
+                name="3_purchase_item",
                 full_match_verifier_next_checkpoint='/playground/checkout?cart={"id":"1","customizations":{"memory":"8GB","storage":"512GB"},"price":1599}',
             ),
             GoldenCheckpoint(
@@ -184,7 +184,7 @@ PLAYGROUND_TESTS: dict[str, PlaygroundTest] = {
                     GoldenLog("type/text // Zip code // 02138", "fill/complex"),
                     GoldenLog("click/button // Order", "fill/complex"),
                 ],
-                name="fill_shipping_info",
+                name="4_fill_shipping_info",
                 orderless_logs=True,
                 full_match_verifier_next_checkpoint='/playground/thanks?cart=[]&location={"city":"Cambridge","firstName":"John","lastName":"Doe","state":"MA","streetAddress":"123 Main Street","zipCode":"02138"}',
             ),
@@ -219,7 +219,7 @@ PLAYGROUND_TESTS: dict[str, PlaygroundTest] = {
                     GoldenLog("type/text // Search items"),
                     GoldenLog("click/iconbutton // Search"),
                 ],
-                name="search_for_item",
+                name="1_search_for_item",
                 full_match_verifier_next_checkpoint="/playground/search?query=[]",
             ),
             GoldenCheckpoint(
@@ -230,7 +230,7 @@ PLAYGROUND_TESTS: dict[str, PlaygroundTest] = {
                         "search/appropriate",
                     )
                 ],
-                name="select_item_from_search",
+                name="2_select_item_from_search",
             ),
             GoldenCheckpoint(
                 url="/playground/product/2",
@@ -238,7 +238,7 @@ PLAYGROUND_TESTS: dict[str, PlaygroundTest] = {
                     GoldenLog("click/button // 36GB (+400.00)"),
                     GoldenLog("click/button // 2TB (+600.00)"),
                 ],
-                name="select_customizations",
+                name="3_select_customizations",
                 orderless_logs=True,
                 full_match_verifier_next_checkpoint='/playground/checkout?cart={"id":"2","customizations":{"memory":"36GB","storage":"2TB"},"price":2999}',
             ),
