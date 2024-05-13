@@ -995,12 +995,18 @@ if __name__ == "__main__":
                             >= 1
                         )
                         if (test["starting_checkpoint"] is not None and checkpoint_only)
-                        else None
+                        else (
+                            lambda lines: any(
+                                PLAYGROUND_TESTS[test["test"]].e2e.path in line
+                                for line in lines
+                                if "NAVIGATE" in line
+                            )
+                        )
                     ),
                     custom_log_break_str=(
                         "only running for single checkpoint"
                         if (test["starting_checkpoint"] is not None and checkpoint_only)
-                        else None
+                        else "only running until reach e2e goal path"
                     ),
                 )
 
