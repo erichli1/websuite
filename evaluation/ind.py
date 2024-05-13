@@ -202,7 +202,7 @@ ind_tests: Dict[str, Dict[str, list[Test]]] = {
         ],
         "accordion": [
             Test(
-                "Please open the accordion to see more",
+                "Open the accordion",
                 lambda logs: eval.ordered(
                     logs,
                     [eval.exact_match(component="click/accordion", newValue="open")],
