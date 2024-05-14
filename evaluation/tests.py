@@ -222,17 +222,16 @@ E2E_TESTS = [
             ["order", "", "", "3_purchase_item", "1", "0", "0", "1"],
             ["order", "", "", "4_fill_shipping_info", "1", "0", "0", "1"],
         ],
-        evaluate_summary=lambda rows: all(
-            row
-            in [
+        evaluate_summary=lambda rows: exact_match_orderless(
+            rows[1:],
+            [
                 ["operational", "type", "text", "1", "1"],
                 ["informational", "search", "appropriate", "1", "1"],
                 ["operational", "click", "iconbutton", "1", "1"],
                 ["operational", "click", "link", "1", "1"],
                 ["operational", "click", "button", "1", "1"],
                 ["informational", "fill", "complex", "1", "1"],
-            ]
-            for row in rows[1:]
+            ],
         ),
     ),
     E2ETest(
@@ -302,17 +301,16 @@ E2E_TESTS = [
             ["order", "", "", "3_purchase_item", "3", "0", "0", "3"],
             ["order", "", "", "4_fill_shipping_info", "3", "0", "0", "3"],
         ],
-        evaluate_summary=lambda rows: all(
-            row
-            in [
+        evaluate_summary=lambda rows: exact_match_orderless(
+            rows[1:],
+            [
                 ["operational", "type", "text", "3", "3"],
                 ["informational", "search", "appropriate", "3", "3"],
                 ["operational", "click", "iconbutton", "3", "3"],
                 ["operational", "click", "link", "3", "3"],
                 ["operational", "click", "button", "3", "3"],
                 ["informational", "fill", "complex", "3", "3"],
-            ]
-            for row in rows[1:]
+            ],
         ),
     ),
     E2ETest(
@@ -358,17 +356,16 @@ E2E_TESTS = [
             ["order", "0", "0"],
             ["order", "", "", "4_fill_shipping_info", "1", "0", "0", "1"],
         ],
-        evaluate_summary=lambda rows: all(
-            row
-            in [
+        evaluate_summary=lambda rows: exact_match_orderless(
+            rows[1:],
+            [
                 ["operational", "type", "text", "1", "1"],
                 ["informational", "search", "appropriate", "1", "1"],
                 ["operational", "click", "iconbutton", "1", "1"],
                 ["operational", "click", "link", "1", "1"],
                 ["operational", "click", "button", "1", "1"],
                 ["informational", "fill", "complex", "1", "1"],
-            ]
-            for row in rows[1:]
+            ],
         ),
     ),
     E2ETest(
@@ -420,17 +417,15 @@ E2E_TESTS = [
             ],  # Missing bc never reached purchase item page for product ID 2
             ["order", "", "", "4_fill_shipping_info", "1", "0", "0", "1"],
         ],
-        evaluate_summary=lambda rows: all(
-            row
-            in [
+        evaluate_summary=lambda rows: exact_match_orderless(
+            rows[1:],
+            [
                 ["operational", "type", "text", "1", "1"],
                 ["operational", "click", "iconbutton", "1", "1"],
                 ["operational", "click", "link", "0", "1"],
                 ["informational", "search", "appropriate", "0", "1"],
-                ["operational", "click", "button", "1", "2"],
                 ["informational", "fill", "complex", "1", "1"],
-            ]
-            for row in rows[1:]
+            ],
         ),
     ),
     E2ETest(
@@ -520,18 +515,25 @@ E2E_TESTS = [
                 "1",
             ],
         ],
-        evaluate_summary=lambda rows: all(
-            row
-            in [
+        evaluate_summary=lambda rows: exact_match_orderless(
+            rows[1:],
+            [
                 ["operational", "type", "text", "1", "1"],
                 ["operational", "click", "iconbutton", "1", "1"],
                 ["operational", "click", "link", "0", "1"],
                 ["informational", "search", "appropriate", "0", "1"],
-            ]
-            for row in rows[1:]
+            ],
         ),
     ),
 ]
+
+
+def exact_match_orderless(rows: list[str], expected_rows: list[str]) -> bool:
+    return (
+        all(row in expected_rows for row in rows)
+        and all(row in rows for row in expected_rows)
+        and len(rows) == len(expected_rows)
+    )
 
 
 def print_ind_test_result(name: str, result: bool):
