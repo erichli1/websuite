@@ -27,6 +27,8 @@ OUTPUT_FILEPATH = PARENT_FOLDER + "output/e2e_output.csv"
 TASK_OUTPUT_FILEPATH = PARENT_FOLDER + "output/e2e_task_output.csv"
 SUMMARY_FILEPATH = PARENT_FOLDER + "output/e2e_summary.txt"
 
+INCLUDE_MISSING_CHECKPOINTS_IN_TASK_SUMMARY = False
+
 
 class GoldenLog(Log):
     def __init__(self, log: str, untracked_component: str | None = None):
@@ -51,14 +53,16 @@ class GoldenCheckpoint(Checkpoint):
         url: str,
         golden_logs: list[GoldenLog],
         name: str,
+        full_match_verifier_next_checkpoint: str,
+        relevant_tasks: list[str] | None = None,
         orderless_logs: bool = False,
-        full_match_verifier_next_checkpoint: str | None = None,
     ):
         super().__init__(url)
         self.golden_logs = golden_logs
         self.name = name
         self.orderless_logs = orderless_logs
         self.full_match_verifier_next_checkpoint = full_match_verifier_next_checkpoint
+        self.relevant_tasks = relevant_tasks
 
 
 class CheckpointMatchStats:
@@ -155,14 +159,15 @@ PLAYGROUND_TESTS: dict[str, PlaygroundTest] = {
                 full_match_verifier_next_checkpoint="/playground/search?query=[]",
             ),
             GoldenCheckpoint(
-                "/playground/search?query=[MacBook Pro M3 chip]",
-                [
+                url="/playground/search?query=[MacBook Pro M3 chip]",
+                golden_logs=[
                     GoldenLog(
                         "click/link // 2023 MacBook Pro - M3 chip, 14-inch",
                         "search/appropriate",
                     )
                 ],
-                "2_select_item_from_search",
+                name="2_select_item_from_search",
+                full_match_verifier_next_checkpoint="/playground/product/1",
             ),
             GoldenCheckpoint(
                 url="/playground/product/1",
@@ -173,20 +178,18 @@ PLAYGROUND_TESTS: dict[str, PlaygroundTest] = {
             GoldenCheckpoint(
                 url='/playground/checkout?cart=[{"id":"1","customizations":{"memory":"8GB","storage":"512GB"},"price":1599}]',
                 golden_logs=[
-                    GoldenLog("type/text // First name // John", "fill/complex"),
-                    GoldenLog("type/text // Last name // Doe", "fill/complex"),
-                    GoldenLog(
-                        "type/text // Street address // 123 Main Street",
-                        "fill/complex",
-                    ),
-                    GoldenLog("type/text // City // Cambridge", "fill/complex"),
-                    GoldenLog("select/select // State // MA", "fill/complex"),
-                    GoldenLog("type/text // Zip code // 02138", "fill/complex"),
-                    GoldenLog("click/button // Order", "fill/complex"),
+                    GoldenLog("type/text // First name // John"),
+                    GoldenLog("type/text // Last name // Doe"),
+                    GoldenLog("type/text // Street address // 123 Main Street"),
+                    GoldenLog("type/text // City // Cambridge"),
+                    GoldenLog("select/select // State // MA"),
+                    GoldenLog("type/text // Zip code // 02138"),
+                    GoldenLog("click/button // Order"),
                 ],
                 name="4_fill_shipping_info",
                 orderless_logs=True,
                 full_match_verifier_next_checkpoint='/playground/thanks?cart=[]&location={"city":"Cambridge","firstName":"John","lastName":"Doe","state":"MA","streetAddress":"123 Main Street","zipCode":"02138"}',
+                relevant_tasks=["fill/complex // Shipping info"],
             ),
         ],
         e2e=e2eTest(
@@ -231,6 +234,7 @@ PLAYGROUND_TESTS: dict[str, PlaygroundTest] = {
                     )
                 ],
                 name="2_select_item_from_search",
+                full_match_verifier_next_checkpoint="/playground/product/2",
             ),
             GoldenCheckpoint(
                 url="/playground/product/2",
@@ -241,6 +245,7 @@ PLAYGROUND_TESTS: dict[str, PlaygroundTest] = {
                 name="3_select_customizations",
                 orderless_logs=True,
                 full_match_verifier_next_checkpoint='/playground/checkout?cart={"id":"2","customizations":{"memory":"36GB","storage":"2TB"},"price":2999}',
+                relevant_tasks=["fill/basic // Customizations"],
             ),
         ],
         e2e=e2eTest(
@@ -354,9 +359,11 @@ def compare_processed_and_golden_checkpoints(
                         url=golden_checkpoints[golden_index].url,
                         checkpoint_status="missing",
                         correct_golden_logs=[],
-                        missing_golden_logs=golden_checkpoints[
-                            golden_index
-                        ].golden_logs,
+                        missing_golden_logs=(
+                            golden_checkpoints[golden_index].golden_logs
+                            if INCLUDE_MISSING_CHECKPOINTS_IN_TASK_SUMMARY
+                            else []
+                        ),
                         extra_logs_processed=[],
                         name=golden_checkpoints[golden_index].name,
                     )
@@ -373,117 +380,123 @@ def compare_processed_and_golden_checkpoints(
             missing_golden_logs = []
             extra_logs_processed = []
 
-            golden_logs = golden_checkpoints[golden_index].golden_logs
-            processed_logs = processed_checkpoints[processed_index].logs
+            # identify if a full match is achieved
+            next_url = (
+                ""
+                if processed_index + 1 >= len(processed_checkpoints)
+                else processed_checkpoints[processed_index + 1].url
+            )
+            full_match = matching_urls(
+                golden_checkpoints[golden_index].full_match_verifier_next_checkpoint,
+                next_url,
+            )
 
-            # basic parsing of logs if order doesn't matter
-            if golden_checkpoints[golden_index].orderless_logs:
-                for golden in golden_logs:
-                    if any(
-                        golden_matches_processed(golden, processed)
-                        for processed in processed_logs
-                    ):
-                        correct_golden_logs.append(golden)
-                    else:
-                        missing_golden_logs.append(golden)
-
-                for processed in processed_logs:
-                    if not any(
-                        golden_matches_processed(golden, processed)
-                        for golden in golden_logs
-                    ):
-                        extra_logs_processed.append(processed)
-
-            # complex parsing of logs if order matches
+            if golden_checkpoints[golden_index].relevant_tasks is not None:
+                relevant_tasks_as_golden_logs = [
+                    GoldenLog(relevant_task)
+                    for relevant_task in golden_checkpoints[golden_index].relevant_tasks
+                ]
+                if full_match:
+                    correct_golden_logs = relevant_tasks_as_golden_logs
+                else:
+                    missing_golden_logs = relevant_tasks_as_golden_logs
             else:
-                golden_logs_index = 0
-                processed_logs_index = 0
+                golden_logs = golden_checkpoints[golden_index].golden_logs
+                processed_logs = processed_checkpoints[processed_index].logs
 
-                while True:
-                    # if both log indexes are out of bounds, we are done
-                    if golden_logs_index >= len(
-                        golden_logs
-                    ) and processed_logs_index >= len(processed_logs):
-                        break
-
-                    # if golden_logs out of bound but not procesed_logs, then mark rest of processed_logs as extra
-                    if golden_logs_index >= len(golden_logs):
-                        for processed_logs_index in range(
-                            processed_logs_index, len(processed_logs)
-                        ):
-                            extra_logs_processed.append(
-                                processed_logs[processed_logs_index]
-                            )
-                        break
-
-                    # if processed_logs out of bound but not golden_logs, then mark rest of golden_logs as missing
-                    if processed_logs_index >= len(processed_logs):
-                        for golden_logs_index in range(
-                            golden_logs_index, len(golden_logs)
-                        ):
-                            missing_golden_logs.append(golden_logs[golden_logs_index])
-                        break
-
-                    # if both are in bounds, we compare the logs
-                    if golden_matches_processed(
-                        golden_logs[golden_logs_index],
-                        processed_logs[processed_logs_index],
-                    ):
-                        correct_golden_logs.append(golden_logs[golden_logs_index])
-                        golden_logs_index += 1
-                        processed_logs_index += 1
-                    else:
-                        future_processed_logs = [
-                            processed_logs[i]
-                            for i in range(processed_logs_index, len(processed_logs))
-                        ]
-
+                # basic parsing of logs if order doesn't matter
+                if golden_checkpoints[golden_index].orderless_logs:
+                    for golden in golden_logs:
                         if any(
-                            [
-                                golden_matches_processed(
-                                    golden_logs[golden_logs_index], log
-                                )
-                                for log in future_processed_logs
-                            ]
+                            golden_matches_processed(golden, processed)
+                            for processed in processed_logs
                         ):
-                            indices = [
-                                index
-                                for index, log in enumerate(future_processed_logs)
-                                if golden_matches_processed(
-                                    golden_logs[golden_logs_index], log
+                            correct_golden_logs.append(golden)
+                        else:
+                            missing_golden_logs.append(golden)
+
+                    for processed in processed_logs:
+                        if not any(
+                            golden_matches_processed(golden, processed)
+                            for golden in golden_logs
+                        ):
+                            extra_logs_processed.append(processed)
+
+                # complex parsing of logs if order matters
+                else:
+                    golden_logs_index = 0
+                    processed_logs_index = 0
+
+                    while True:
+                        # if both log indexes are out of bounds, we are done
+                        if golden_logs_index >= len(
+                            golden_logs
+                        ) and processed_logs_index >= len(processed_logs):
+                            break
+
+                        # if golden_logs out of bound but not procesed_logs, then mark rest of processed_logs as extra
+                        if golden_logs_index >= len(golden_logs):
+                            for processed_logs_index in range(
+                                processed_logs_index, len(processed_logs)
+                            ):
+                                extra_logs_processed.append(
+                                    processed_logs[processed_logs_index]
+                                )
+                            break
+
+                        # if processed_logs out of bound but not golden_logs, then mark rest of golden_logs as missing
+                        if processed_logs_index >= len(processed_logs):
+                            for golden_logs_index in range(
+                                golden_logs_index, len(golden_logs)
+                            ):
+                                missing_golden_logs.append(
+                                    golden_logs[golden_logs_index]
+                                )
+                            break
+
+                        # if both are in bounds, we compare the logs
+                        if golden_matches_processed(
+                            golden_logs[golden_logs_index],
+                            processed_logs[processed_logs_index],
+                        ):
+                            correct_golden_logs.append(golden_logs[golden_logs_index])
+                            golden_logs_index += 1
+                            processed_logs_index += 1
+                        else:
+                            future_processed_logs = [
+                                processed_logs[i]
+                                for i in range(
+                                    processed_logs_index, len(processed_logs)
                                 )
                             ]
-                            i_index = indices[0]
 
-                            for i in range(
-                                processed_logs_index, processed_logs_index + i_index
+                            if any(
+                                [
+                                    golden_matches_processed(
+                                        golden_logs[golden_logs_index], log
+                                    )
+                                    for log in future_processed_logs
+                                ]
                             ):
-                                extra_logs_processed.append(processed_logs[i])
-                            processed_logs_index += i_index
-                        else:
-                            missing_golden_logs.append(golden_logs[golden_logs_index])
-                            golden_logs_index += 1
+                                indices = [
+                                    index
+                                    for index, log in enumerate(future_processed_logs)
+                                    if golden_matches_processed(
+                                        golden_logs[golden_logs_index], log
+                                    )
+                                ]
+                                i_index = indices[0]
 
-            full_match = False
-            if (
-                golden_checkpoints[golden_index].full_match_verifier_next_checkpoint
-                is not None
-            ):
-                next_url = (
-                    ""
-                    if processed_index + 1 >= len(processed_checkpoints)
-                    else processed_checkpoints[processed_index + 1].url
-                )
-                full_match = matching_urls(
-                    golden_checkpoints[
-                        golden_index
-                    ].full_match_verifier_next_checkpoint,
-                    next_url,
-                )
-            else:
-                full_match = (
-                    len(correct_golden_logs) == len(golden_logs) == len(processed_logs)
-                )
+                                for i in range(
+                                    processed_logs_index, processed_logs_index + i_index
+                                ):
+                                    extra_logs_processed.append(processed_logs[i])
+                                processed_logs_index += i_index
+                            else:
+                                missing_golden_logs.append(
+                                    golden_logs[golden_logs_index]
+                                )
+                                golden_logs_index += 1
 
             evaluated_checkpoints.append(
                 EvaluatedGoldenCheckpoint(
@@ -528,9 +541,11 @@ def compare_processed_and_golden_checkpoints(
                         url=golden_checkpoints[golden_index].url,
                         checkpoint_status="missing",
                         correct_golden_logs=[],
-                        missing_golden_logs=golden_checkpoints[
-                            golden_index
-                        ].golden_logs,
+                        missing_golden_logs=(
+                            golden_checkpoints[golden_index].golden_logs
+                            if INCLUDE_MISSING_CHECKPOINTS_IN_TASK_SUMMARY
+                            else []
+                        ),
                         extra_logs_processed=[],
                         name=golden_checkpoints[golden_index].name,
                     )

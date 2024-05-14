@@ -225,13 +225,12 @@ E2E_TESTS = [
         evaluate_summary=lambda rows: all(
             row
             in [
-                ["operational", "type", "text", "6", "6"],
+                ["operational", "type", "text", "1", "1"],
                 ["informational", "search", "appropriate", "1", "1"],
                 ["operational", "click", "iconbutton", "1", "1"],
                 ["operational", "click", "link", "1", "1"],
-                ["operational", "click", "button", "2", "2"],
-                ["operational", "select", "select", "1", "1"],
-                ["informational", "fill", "complex", "7", "7"],
+                ["operational", "click", "button", "1", "1"],
+                ["informational", "fill", "complex", "1", "1"],
             ]
             for row in rows[1:]
         ),
@@ -306,13 +305,12 @@ E2E_TESTS = [
         evaluate_summary=lambda rows: all(
             row
             in [
-                ["operational", "type", "text", "18", "18"],
+                ["operational", "type", "text", "3", "3"],
                 ["informational", "search", "appropriate", "3", "3"],
                 ["operational", "click", "iconbutton", "3", "3"],
                 ["operational", "click", "link", "3", "3"],
-                ["operational", "click", "button", "6", "6"],
-                ["operational", "select", "select", "3", "3"],
-                ["informational", "fill", "complex", "21", "21"],
+                ["operational", "click", "button", "3", "3"],
+                ["informational", "fill", "complex", "3", "3"],
             ]
             for row in rows[1:]
         ),
@@ -363,13 +361,12 @@ E2E_TESTS = [
         evaluate_summary=lambda rows: all(
             row
             in [
-                ["operational", "type", "text", "6", "6"],
+                ["operational", "type", "text", "1", "1"],
                 ["informational", "search", "appropriate", "1", "1"],
                 ["operational", "click", "iconbutton", "1", "1"],
                 ["operational", "click", "link", "1", "1"],
-                ["operational", "click", "button", "2", "2"],
-                ["operational", "select", "select", "1", "1"],
-                ["informational", "fill", "complex", "7", "7"],
+                ["operational", "click", "button", "1", "1"],
+                ["informational", "fill", "complex", "1", "1"],
             ]
             for row in rows[1:]
         ),
@@ -426,13 +423,12 @@ E2E_TESTS = [
         evaluate_summary=lambda rows: all(
             row
             in [
-                ["operational", "type", "text", "6", "6"],
+                ["operational", "type", "text", "1", "1"],
                 ["operational", "click", "iconbutton", "1", "1"],
                 ["operational", "click", "link", "0", "1"],
                 ["informational", "search", "appropriate", "0", "1"],
                 ["operational", "click", "button", "1", "2"],
-                ["operational", "select", "select", "1", "1"],
-                ["informational", "fill", "complex", "7", "7"],
+                ["informational", "fill", "complex", "1", "1"],
             ]
             for row in rows[1:]
         ),
@@ -488,6 +484,52 @@ E2E_TESTS = [
             ["order", "", "", "4_fill_shipping_info", "0", "1", "0", "1"],
         ],
         evaluate_summary=None,
+    ),
+    E2ETest(
+        name="e2e_add_cart_pass_1_stuck_2",
+        log_content="""
+                    TEST BEGIN: playground/add_custom_to_cart
+                    NAVIGATE // /playground
+                    type/text // Search items // laptop // 
+                    click/iconbutton // Search
+                    NAVIGATE // /playground/search?query=laptop
+                    TEST FINISH
+                    """,
+        evaluate_output=lambda rows: rows[1:]
+        == [
+            ["add_custom_to_cart", "0", "1"],
+            ["add_custom_to_cart", "", "", "1_search_for_item", "1", "0", "0", "1"],
+            [
+                "add_custom_to_cart",
+                "",
+                "",
+                "2_select_item_from_search",
+                "0",
+                "1",
+                "0",
+                "1",
+            ],
+            [
+                "add_custom_to_cart",
+                "",
+                "",
+                "3_select_customizations",
+                "0",
+                "0",
+                "1",
+                "1",
+            ],
+        ],
+        evaluate_summary=lambda rows: all(
+            row
+            in [
+                ["operational", "type", "text", "1", "1"],
+                ["operational", "click", "iconbutton", "1", "1"],
+                ["operational", "click", "link", "0", "1"],
+                ["informational", "search", "appropriate", "0", "1"],
+            ]
+            for row in rows[1:]
+        ),
     ),
 ]
 
